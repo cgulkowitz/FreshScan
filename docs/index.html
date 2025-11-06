@@ -12,497 +12,497 @@
   </style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="en"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1">&lt;meta charset="utf-8" /&gt;</p>
-<p class="p1">&lt;meta name="viewport" content="width=device-width, initial-scale=1" /&gt;</p>
-<p class="p1">&lt;title&gt;Receipt → Storage &amp; Expiration Chart&lt;/title&gt;</p>
-<p class="p1">&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>:root{</p>
-<p class="p1"><span class="Apple-converted-space">    </span>--bg:#0f0f12; --card:#17181c; --muted:#9aa0a6; --txt:#e8eaed; --accent:#8ab4f8;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>--red:#ff6b6b; --yellow:#ffd166; --green:#06d6a0; --blue:#48cae4;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>--border:#2a2e35;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>*{box-sizing:border-box}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>body{margin:0; font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; color:var(--txt); background:linear-gradient(180deg,#0b0c10,#101114 40%, #0f1116)}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>header{padding:28px 20px 8px; text-align:center}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>header h1{margin:0 0 6px; font-size:clamp(22px,4vw,32px); letter-spacing:.2px}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>header p{margin:0; color:var(--muted)}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>main{max-width:1100px; margin:18px auto 56px; padding:0 16px}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.controls, .output, .about{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; margin:14px 0}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.row{display:flex; flex-wrap:wrap; gap:12px; align-items:center}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.row &gt; *{flex:1 1 220px}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>input[type="file"]{padding:10px; border:1px dashed var(--border); border-radius:10px; background:#101217}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>input[type="date"], input[type="text"], select{width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:#101217; color:var(--txt)}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.btn{display:inline-flex; gap:8px; align-items:center; padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:#14161b; color:var(--txt); cursor:pointer; text-decoration:none; user-select:none}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.btn:hover{border-color:#38414a}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.btn.primary{background:linear-gradient(180deg,#1f2431,#19202b); border-color:#2a3645; color:#e6f0ff}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.btn.success{background:#113630; border-color:#1b5046}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.btn.warn{background:#3a2f12; border-color:#5f4a1a}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.btn.ghost{background:transparent}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.progress{height:10px; background:#0d1116; border:1px solid var(--border); border-radius:999px; overflow:hidden; margin-top:10px}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.progress span{display:block; height:100%; width:0%; background:linear-gradient(90deg,#6ea8fe,#65d6ff)}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>table{width:100%; border-collapse:collapse; margin-top:8px; background:#0f1116; border-radius:10px; overflow:hidden}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>th, td{padding:10px 10px; border-bottom:1px solid #1d2229; vertical-align:top}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>th{position:sticky; top:0; background:#12151b; z-index:1; text-align:left; font-weight:600; color:#d7e3ff}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>tbody tr:last-child td{border-bottom:none}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.pill{display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; letter-spacing:.2px}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.pill.red{background:color-mix(in oklab, var(--red) 30%, transparent); color:#ffd7d7; border:1px solid color-mix(in oklab, var(--red) 50%, #000 40%)}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.pill.yellow{background:color-mix(in oklab, var(--yellow) 25%, transparent); color:#fff2cc; border:1px solid color-mix(in oklab, var(--yellow) 45%, #000 40%)}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.pill.green{background:color-mix(in oklab, var(--green) 22%, transparent); color:#d7fff1; border:1px solid color-mix(in oklab, var(--green) 40%, #000 40%)}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.muted{color:var(--muted)}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.hint{font-size:12px; color:var(--muted); margin-top:6px}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.grid{display:grid; grid-template-columns:1fr; gap:14px}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>@media (min-width:900px){ .grid{grid-template-columns: 1.1fr .9fr} }</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.hidden{display:none !important}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.footer-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.small{font-size:12px}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.kbd{padding:.2rem .45rem; border:1px solid var(--border); border-bottom-width:2px; border-radius:6px; background:#11141a; font:12px ui-monospace,monospace; color:#ddecff}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.tag{font-size:11px; padding:2px 7px; border-radius:6px; border:1px solid var(--border); color:#cfe1ff}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>.right{float:right}</p>
-<p class="p1">&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p1">&lt;header&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1&gt;Receipt → Storage &amp; Expiration Chart&lt;/h1&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;p&gt;Upload a photo of your grocery receipt. I’ll OCR it, detect the date, and build a color-coded chart with storage tips and weekday expiration.&lt;/p&gt;</p>
-<p class="p1">&lt;/header&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;main&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;section class="controls"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="grid"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;Upload receipt image (JPG/PNG)&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;input id="fileInput" type="file" accept="image/*" /&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="hint"&gt;Good lighting helps OCR. Crop to the receipt if possible.&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="ocrStatus" class="hint" style="margin-top:8px"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="progress hidden" id="progress"&gt;&lt;span id="bar"&gt;&lt;/span&gt;&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="btn primary" id="runOcrBtn"&gt;Run OCR &amp; Build Chart&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="btn ghost" id="sampleBtn" title="Uses the Eataly receipt text from your example"&gt;Use sample text&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="btn" id="pasteBtn"&gt;Paste text&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;Detected/Chosen purchase date&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;input id="purchaseDate" type="date" /&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="hint"&gt;If I can’t find the date on the receipt, set it here.&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;label style="margin-top:12px"&gt;Shelf life presets (you can edit per item later)&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="presetSelect"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="default"&gt;Default guide&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="conservative"&gt;Conservative (earlier)&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="liberal"&gt;Liberal (later)&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/select&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="hint small"&gt;Categories include: fish, cooked salads, yogurt, cucumbers, fresh herbs, onions/shallots, chocolate/dessert, and a generic fallback.&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/section&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;section class="output"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row" style="margin-bottom:8px"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;strong&gt;Parsed items&lt;/strong&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;span class="tag" id="dateBadge"&gt;&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="right small muted"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>Tip: click any shelf-life to edit; the expiration &amp; color update automatically.</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="tableWrap" class="hidden"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;table id="resultTable" aria-label="Expiration table"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;thead&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;tr&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;th style="width:32%"&gt;Item&lt;/th&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;th style="width:26%"&gt;How to store&lt;/th&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;th style="width:16%"&gt;Shelf life&lt;/th&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;th style="width:18%"&gt;Expires&lt;/th&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;th style="width:8%"&gt;Flag&lt;/th&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;/tr&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/thead&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;tbody id="tbody"&gt;&lt;/tbody&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/table&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="footer-actions"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn success" id="downloadCsv"&gt;Download CSV&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn warn" id="printBtn"&gt;Print&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn" id="copyBtn"&gt;Copy table text&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="emptyState" class="muted"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>No results yet. Upload a receipt and press &lt;strong&gt;Run OCR&lt;/strong&gt;, or click &lt;strong&gt;Use sample text&lt;/strong&gt;.</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;details style="margin-top:12px"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;summary class="small"&gt;Show raw OCR text&lt;/summary&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;pre id="rawText" class="mono" style="white-space:pre-wrap; background:#0c0f14; border:1px solid #1b212a; border-radius:8px; padding:10px; max-height:240px; overflow:auto"&gt;&lt;/pre&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/details&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/section&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;section class="about small muted"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;strong&gt;Notes &amp; assumptions&lt;/strong&gt;&lt;br&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>• OCR isn’t perfect — I let you edit shelf life / names inline. &lt;br&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>• Expiration rules are estimates. When in doubt, trust the package label or nose test. &lt;br&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>• Color flags: &lt;span class="pill red"&gt;≤3 days&lt;/span&gt;, &lt;span class="pill yellow"&gt;4–10 days&lt;/span&gt;, &lt;span class="pill green"&gt;&gt;10 days&lt;/span&gt;. &lt;br&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/section&gt;</p>
-<p class="p1">&lt;/main&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;!-- Tesseract.js (client-side OCR) --&gt;</p>
-<p class="p1">&lt;script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"&gt;&lt;/script&gt;</p>
-<p class="p1">&lt;script&gt;</p>
-<p class="p1">/* --------------------- utilities ---------------------- */</p>
-<p class="p1">const $ = s =&gt; document.querySelector(s);</p>
-<p class="p1">const $$ = s =&gt; Array.from(document.querySelectorAll(s));</p>
-<p class="p2"><br></p>
-<p class="p1">function fmtDate(d){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const dt = new Date(d);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const y = dt.getFullYear();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const m = String(dt.getMonth()+1).padStart(2,'0');</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const day = String(dt.getDate()).padStart(2,'0');</p>
-<p class="p1"><span class="Apple-converted-space">  </span>return `${y}-${m}-${day}`;</p>
-<p class="p1">}</p>
-<p class="p1">function humanDate(d){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const dt = new Date(d);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>return dt.toLocaleDateString(undefined,{year:'numeric', month:'short', day:'numeric'}) +</p>
-<p class="p1"><span class="Apple-converted-space">         </span>" (" + dt.toLocaleDateString(undefined,{weekday:'long'}) + ")";</p>
-<p class="p1">}</p>
-<p class="p1">function addDays(base, n){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const d = new Date(base);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>d.setDate(d.getDate() + n);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>return d;</p>
-<p class="p1">}</p>
-<p class="p1">function addMonths(base, n){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const d = new Date(base);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>d.setMonth(d.getMonth() + n);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>return d;</p>
-<p class="p1">}</p>
-<p class="p1">function daysBetween(a,b){ return Math.round((b-a)/(1000*60*60*24)); }</p>
-<p class="p2"><br></p>
-<p class="p1">/* ------------- shelf-life knowledge base ------------- */</p>
-<p class="p1">const RULES = {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>default: {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>fish: {days:2, store:"Refrigerate &amp; cook within 1–2 days or freeze"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>cooked_salad: {days:5, store:"Refrigerate in airtight container"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>yogurt: {days:10, store:"Refrigerate; keep sealed"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>cucumber: {days:7, store:"Refrigerate in crisper drawer"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>herb: {days:7, store:"Wrap in damp paper towel; refrigerate in bag/jar"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>onion_shallot: {days:30, store:"Cool, dark, ventilated place (not fridge)"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>chocolate: {days:21, store:"Cool, dry place; refrigerate if warm"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>generic: {days:7, store:"Refrigerate; check package"}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>},</p>
-<p class="p1"><span class="Apple-converted-space">  </span>conservative: {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>fish: {days:2, store:"Refrigerate &amp; cook within 1 day or freeze"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>cooked_salad: {days:3, store:"Refrigerate; eat within 3 days"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>yogurt: {days:7, store:"Refrigerate; keep sealed"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>cucumber: {days:6, store:"Refrigerate in crisper drawer"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>herb: {days:5, store:"Wrap damp; refrigerate"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>onion_shallot: {days:25, store:"Cool, dark, ventilated"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>chocolate: {days:14, store:"Cool, dry place"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>generic: {days:5, store:"Refrigerate; check package"}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>},</p>
-<p class="p1"><span class="Apple-converted-space">  </span>liberal: {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>fish: {days:3, store:"Refrigerate or freeze promptly"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>cooked_salad: {days:6, store:"Refrigerate, airtight"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>yogurt: {days:12, store:"Refrigerate; keep sealed"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>cucumber: {days:10, store:"Refrigerate in crisper drawer"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>herb: {days:8, store:"Wrap damp; refrigerate"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>onion_shallot: {days:45, store:"Cool, dark, ventilated"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>chocolate: {days:30, store:"Cool, dry place"},</p>
-<p class="p1"><span class="Apple-converted-space">    </span>generic: {days:9, store:"Refrigerate; check package"}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p1">};</p>
-<p class="p2"><br></p>
-<p class="p1">/* keyword → category map (simple heuristics) */</p>
-<p class="p1">const MAP = [</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{re:/\b(salmon|cod|tuna|halibut|fillet|fish)\b/i, cat:'fish'},</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{re:/\b(farro.*salad|potato.*salad|winter.*salad|deli.*salad)\b/i, cat:'cooked_salad'},</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{re:/\b(yogurt|yoghurt|greek yog|labneh|kefir)\b/i, cat:'yogurt'},</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{re:/\b(cucumber|persian)\b/i, cat:'cucumber'},</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{re:/\b(parsley|cilantro|basil|dill|mint|herb)\b/i, cat:'herb'},</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{re:/\b(shallot|onion)\b/i, cat:'onion_shallot'},</p>
-<p class="p1"><span class="Apple-converted-space">  </span>{re:/\b(chocolate|fondente|fondentenero|dessert|truffle|candy)\b/i, cat:'chocolate'}</p>
-<p class="p1">];</p>
-<p class="p2"><br></p>
-<p class="p1">function categorize(name){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>for (const m of MAP){ if (m.re.test(name)) return m.cat; }</p>
-<p class="p1"><span class="Apple-converted-space">  </span>return 'generic';</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">/* -------------------- OCR handling -------------------- */</p>
-<p class="p1">const fileInput = $('#fileInput');</p>
-<p class="p1">const runBtn = $('#runOcrBtn');</p>
-<p class="p1">const sampleBtn = $('#sampleBtn');</p>
-<p class="p1">const pasteBtn = $('#pasteBtn');</p>
-<p class="p1">const progress = $('#progress');</p>
-<p class="p1">const bar = $('#bar');</p>
-<p class="p1">const statusEl = $('#ocrStatus');</p>
-<p class="p1">const tableWrap = $('#tableWrap');</p>
-<p class="p1">const tbody = $('#tbody');</p>
-<p class="p1">const emptyState = $('#emptyState');</p>
-<p class="p1">const rawText = $('#rawText');</p>
-<p class="p1">const purchaseDate = $('#purchaseDate');</p>
-<p class="p1">const dateBadge = $('#dateBadge');</p>
-<p class="p1">const presetSelect = $('#presetSelect');</p>
-<p class="p2"><br></p>
-<p class="p1">purchaseDate.value = fmtDate(new Date()); // default today</p>
-<p class="p2"><br></p>
-<p class="p1">runBtn.addEventListener('click', async ()=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let image = fileInput.files?.[0];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(!image){ alert('Please choose a receipt image first (or click "Use sample text").'); return; }</p>
-<p class="p1"><span class="Apple-converted-space">  </span>await doOCR(image);</p>
-<p class="p1">});</p>
-<p class="p2"><br></p>
-<p class="p1">sampleBtn.addEventListener('click', ()=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const txt = SAMPLE_TEXT.trim();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>handleParsedText(txt);</p>
-<p class="p1">});</p>
-<p class="p2"><br></p>
-<p class="p1">pasteBtn.addEventListener('click', ()=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const txt = prompt("Paste receipt text (or type items, one per line):","");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(txt){ handleParsedText(txt); }</p>
-<p class="p1">});</p>
-<p class="p2"><br></p>
-<p class="p1">async function doOCR(file){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>statusEl.textContent = 'Starting OCR…';</p>
-<p class="p1"><span class="Apple-converted-space">  </span>progress.classList.remove('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">  </span>bar.style.width = '0%';</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>const worker = await Tesseract.createWorker('eng', 1, {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>logger: m =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if(m.status === 'recognizing text'){</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const pct = Math.round(m.progress*100);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>bar.style.width = pct + '%';</p>
-<p class="p1"><span class="Apple-converted-space">        </span>statusEl.textContent = `OCR: ${pct}%`;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>const { data: { text } } = await worker.recognize(file);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>await worker.terminate();</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>rawText.textContent = text;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>statusEl.textContent = 'OCR complete.';</p>
-<p class="p1"><span class="Apple-converted-space">  </span>progress.classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">  </span>handleParsedText(text);</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">/* --------------- parse receipt → items ---------------- */</p>
-<p class="p1">function handleParsedText(text){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>rawText.textContent = text;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>// Detect purchase date (US style mm/dd/yy or mm/dd/yyyy)</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const dateMatch = text.match(/\b(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]([0-9]{2,4})\b/);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(dateMatch){</p>
-<p class="p1"><span class="Apple-converted-space">    </span>let [mm, dd, yy] = [dateMatch[1], dateMatch[2], dateMatch[3]];</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(yy.length===2){ yy = '20' + yy; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const detected = new Date(`${yy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}T12:00:00`);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(!isNaN(detected)) purchaseDate.value = fmtDate(detected);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>// Split into lines and try to extract "item — price" style rows</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const lines = text.split(/\r?\n/).map(s=&gt;s.trim()).filter(Boolean);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>// Heuristic: a line with some letters and a trailing price number</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const priceRe = /(\$?\s?\d+(?:\.\d{2})?)$/;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const likely = lines.filter(l=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(l.length&lt;3) return false;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(/receipt|total|subtotal|tax|change|clerk|store|nyc|visa|debit|credit|sales|card|information/i.test(l)) return false;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(/^\d{5,}/.test(l)) return true; // UPC+item line (like your Eataly receipt)</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(/[A-Za-z]/.test(l) &amp;&amp; priceRe.test(l)) return true;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>return false;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>// Build item objects</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const items = [];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>for(const ln of likely){</p>
-<p class="p1"><span class="Apple-converted-space">    </span>// If UPC + name + price (e.g., "852210005159 WHITE MOUSTACHE SUMMER PEACH 8OZ 6.79")</p>
-<p class="p1"><span class="Apple-converted-space">    </span>let name = ln;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Remove leading long code(s)</p>
-<p class="p1"><span class="Apple-converted-space">    </span>name = name.replace(/^[\d\s]{6,}\s+/,'');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Remove quantity/weight fragments like "0.200 lb @ $3.99/lb 0.80"</p>
-<p class="p1"><span class="Apple-converted-space">    </span>name = name.replace(/\b\d+(?:\.\d+)?\s*(lb|oz|@|\$|pkg|ea|ct|x|lb\.?)\b.*$/i, m=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">      </span>// keep name before the weight/price cluster if there's an earlier word run</p>
-<p class="p1"><span class="Apple-converted-space">      </span>return '';</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}).trim() || ln.replace(/^\d+\s+/,'');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>// If we removed too much, fallback to original (minus trailing price)</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(name.length &lt; 3){</p>
-<p class="p1"><span class="Apple-converted-space">      </span>name = ln.replace(priceRe,'').trim();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Extract trailing price if present (not used, but handy)</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const pm = ln.match(priceRe);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const price = pm ? pm[1].replace('$','').trim() : '';</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// sanitize name</p>
-<p class="p1"><span class="Apple-converted-space">    </span>name = name.replace(/\s{2,}/g,' ').replace(/\bEA\b/i,'').trim();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Prevent obvious non-item rows</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(/^\$/.test(name) || /TOTAL|SUBTOTAL|TAX/i.test(name)) continue;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>items.push({raw: ln, name, price});</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>// Deduplicate by name (simple)</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const seen = new Set();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const dedup = items.filter(x=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const key = x.name.toLowerCase();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(seen.has(key)) return false;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>seen.add(key); return true;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>buildTable(dedup);</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">/* -------------- build interactive table --------------- */</p>
-<p class="p1">function shelfLifeFor(name){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const preset = RULES[presetSelect.value] || RULES.default;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const cat = categorize(name);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const rule = preset[cat] || preset.generic;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>return {cat, ...rule};</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function colorFlag(days){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(days &lt;= 3) return {cls:'red', label:'Use ASAP'};</p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(days &lt;= 10) return {cls:'yellow', label:'Use Soon'};</p>
-<p class="p1"><span class="Apple-converted-space">  </span>return {cls:'green', label:'Lasts a while'};</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">function buildTable(items){</p>
-<p class="p1"><span class="Apple-converted-space">  </span>tbody.innerHTML = '';</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const base = new Date(purchaseDate.value);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>if(!items.length){</p>
-<p class="p1"><span class="Apple-converted-space">    </span>tableWrap.classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>emptyState.classList.remove('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>for(const it of items){</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const rule = shelfLifeFor(it.name);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const tr = document.createElement('tr');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Compute expiry</p>
-<p class="p1"><span class="Apple-converted-space">    </span>let expires;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if(rule.months){ expires = addMonths(base, rule.months); }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>else { expires = addDays(base, rule.days); }</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>const days = daysBetween(base, expires);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const flag = colorFlag(days);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>tr.innerHTML = `</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;td&gt;&lt;div style="font-weight:600"&gt;${escapeHtml(titleCase(it.name))}&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="muted mono small"&gt;${escapeHtml(it.raw)}&lt;/div&gt;&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;td&gt;${escapeHtml(rule.store)}&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;input class="lifeInput" type="text" value="${rule.days ?? (rule.months*30)} days"<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">               </span>style="width:120px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:#0f1217; color:var(--txt)"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="hint small"&gt;edit (e.g. “5 days” or “2 months”)&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="expiresCell"&gt;&lt;strong&gt;${escapeHtml(humanDate(expires))}&lt;/strong&gt;&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="flagCell"&gt;&lt;span class="pill ${flag.cls}"&gt;${flag.label}&lt;/span&gt;&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>`;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>tbody.appendChild(tr);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>tableWrap.classList.remove('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">  </span>emptyState.classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">  </span>dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>// attach editors</p>
-<p class="p1"><span class="Apple-converted-space">  </span>$$('#resultTable .lifeInput').forEach((inp, idx)=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">    </span>inp.addEventListener('change', ()=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const val = inp.value.trim().toLowerCase();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>let nDays = 7;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const m = val.match(/(\d+(?:\.\d+)?)\s*(day|days|d|month|months|mo)/);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if(m){</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const num = parseFloat(m[1]);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const unit = m[2];</p>
-<p class="p1"><span class="Apple-converted-space">        </span>nDays = /mo|month/.test(unit) ? Math.round(num*30) : Math.round(num);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const base = new Date(purchaseDate.value);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const newExp = addDays(base, nDays);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>const row = inp.closest('tr');</p>
-<p class="p1"><span class="Apple-converted-space">      </span>row.querySelector('.expiresCell').innerHTML = `&lt;strong&gt;${escapeHtml(humanDate(newExp))}&lt;/strong&gt;`;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const flag = colorFlag(nDays);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const flagCell = row.querySelector('.flagCell');</p>
-<p class="p1"><span class="Apple-converted-space">      </span>flagCell.innerHTML = `&lt;span class="pill ${flag.cls}"&gt;${flag.label}&lt;/span&gt;`;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>});</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1">}</p>
-<p class="p2"><br></p>
-<p class="p1">/* --------------------- actions ------------------------ */</p>
-<p class="p1">$('#downloadCsv').addEventListener('click', ()=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const rows = [['Item','How to store','Shelf life','Expires','Flag']];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>$$('#resultTable tbody tr').forEach(tr=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const tds = tr.querySelectorAll('td');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>rows.push([</p>
-<p class="p1"><span class="Apple-converted-space">      </span>tds[0].firstElementChild.textContent.trim(),</p>
-<p class="p1"><span class="Apple-converted-space">      </span>tds[1].textContent.trim(),</p>
-<p class="p1"><span class="Apple-converted-space">      </span>tds[2].querySelector('input').value.trim(),</p>
-<p class="p1"><span class="Apple-converted-space">      </span>tds[3].textContent.trim(),</p>
-<p class="p1"><span class="Apple-converted-space">      </span>tds[4].textContent.trim()</p>
-<p class="p1"><span class="Apple-converted-space">    </span>]);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const csv = rows.map(r=&gt;r.map(s=&gt;`"${s.replace(/"/g,'""')}"`).join(',')).join('\n');</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const blob = new Blob([csv], {type:'text/csv'});</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const url = URL.createObjectURL(blob);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const a = Object.assign(document.createElement('a'), {href:url, download:`receipt-expirations-${fmtDate(new Date())}.csv`});</p>
-<p class="p1"><span class="Apple-converted-space">  </span>document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);</p>
-<p class="p1">});</p>
-<p class="p1">$('#printBtn').addEventListener('click', ()=&gt; window.print());</p>
-<p class="p1">$('#copyBtn').addEventListener('click', ()=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const lines = [];</p>
-<p class="p1"><span class="Apple-converted-space">  </span>$$('#resultTable tbody tr').forEach(tr=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const [item, store, life, exp, flag] = tr.querySelectorAll('td');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>lines.push(`${item.firstElementChild.textContent} — ${store.textContent} — ${life.querySelector('input').value} — ${exp.textContent} — ${flag.textContent}`);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1"><span class="Apple-converted-space">  </span>navigator.clipboard.writeText(lines.join('\n'));</p>
-<p class="p1"><span class="Apple-converted-space">  </span>alert('Table copied to clipboard.');</p>
-<p class="p1">});</p>
-<p class="p1">purchaseDate.addEventListener('change', ()=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">  </span>// recompute expirations for all rows</p>
-<p class="p1"><span class="Apple-converted-space">  </span>$$('#resultTable tbody tr').forEach(tr=&gt;{</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const inp = tr.querySelector('.lifeInput');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>inp.dispatchEvent(new Event('change'));</p>
-<p class="p1"><span class="Apple-converted-space">  </span>});</p>
-<p class="p1"><span class="Apple-converted-space">  </span>dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'});</p>
-<p class="p1">});</p>
-<p class="p2"><br></p>
-<p class="p1">/* ---------------- sample (your Eataly) ---------------- */</p>
-<p class="p1">const SAMPLE_TEXT = `</p>
-<p class="p1">EATALY</p>
-<p class="p1">200 5th Ave. New York City, NY 10010</p>
-<p class="p1">10/28/25 5:45 PM</p>
-<p class="p1">Clerk: Cyrus Kisitu</p>
-<p class="p1">852210005159 WHITE MOUSTACHE SUMMER PEACH 8OZ 6.79</p>
-<p class="p1">852210005012 WHITE MOUSTACHE GREEK YOG 8 OZ 6.79</p>
-<p class="p1">34047 ORGANIC SALMON FILLET 0.15</p>
-<p class="p1">0.005 lb @ $29.99/lb</p>
-<p class="p1">2063012 FARRO WINTER SALAD 14.99NYT</p>
-<p class="p1">8006380230039 MINI FONDENTENERO 16 13.99NYT</p>
-<p class="p1">05783690001 CUCUMBER PERSIAN ORGANIC 12X1LB 4.99</p>
-<p class="p1">10634 ONION SHALLOT 0.200 lb @ $3.99/lb 0.80</p>
-<p class="p1">10397 HERB PARSLEY ITALIAN FRESH 1.99</p>
-<p class="p1">SUBTOTAL 50.49</p>
-<p class="p1">NYC SALES TAX 8.875% 2.57</p>
-<p class="p1">TOTAL 53.06</p>
-<p class="p1">`;</p>
-<p class="p2"><br></p>
-<p class="p1">/* ------------------- helpers -------------------------- */</p>
-<p class="p1">function titleCase(s){ return s.toLowerCase().replace(/\b\w/g,c=&gt;c.toUpperCase()); }</p>
-<p class="p1">function escapeHtml(s){ return s.replace(/[&amp;&lt;&gt;"']/g, c =&gt; ({'&amp;':'&amp;amp;','&lt;':'&amp;lt;','&gt;':'&amp;gt;','"':'&amp;quot;',"'":'&amp;#39;'}[c])); }</p>
-<p class="p1">&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Receipt → Storage &amp; Expiration Chart</title>
+<style>
+<span class="Apple-converted-space">  </span>:root{
+<span class="Apple-converted-space">    </span>--bg:#0f0f12; --card:#17181c; --muted:#9aa0a6; --txt:#e8eaed; --accent:#8ab4f8;
+<span class="Apple-converted-space">    </span>--red:#ff6b6b; --yellow:#ffd166; --green:#06d6a0; --blue:#48cae4;
+<span class="Apple-converted-space">    </span>--border:#2a2e35;
+<span class="Apple-converted-space">  </span>}
+<span class="Apple-converted-space">  </span>*{box-sizing:border-box}
+<span class="Apple-converted-space">  </span>body{margin:0; font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; color:var(--txt); background:linear-gradient(180deg,#0b0c10,#101114 40%, #0f1116)}
+<span class="Apple-converted-space">  </span>header{padding:28px 20px 8px; text-align:center}
+<span class="Apple-converted-space">  </span>header h1{margin:0 0 6px; font-size:clamp(22px,4vw,32px); letter-spacing:.2px}
+<span class="Apple-converted-space">  </span>header p{margin:0; color:var(--muted)}
+<span class="Apple-converted-space">  </span>main{max-width:1100px; margin:18px auto 56px; padding:0 16px}
+<span class="Apple-converted-space">  </span>.controls, .output, .about{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; margin:14px 0}
+<span class="Apple-converted-space">  </span>.row{display:flex; flex-wrap:wrap; gap:12px; align-items:center}
+<span class="Apple-converted-space">  </span>.row > *{flex:1 1 220px}
+<span class="Apple-converted-space">  </span>label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+<span class="Apple-converted-space">  </span>input[type="file"]{padding:10px; border:1px dashed var(--border); border-radius:10px; background:#101217}
+<span class="Apple-converted-space">  </span>input[type="date"], input[type="text"], select{width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:#101217; color:var(--txt)}
+<span class="Apple-converted-space">  </span>.btn{display:inline-flex; gap:8px; align-items:center; padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:#14161b; color:var(--txt); cursor:pointer; text-decoration:none; user-select:none}
+<span class="Apple-converted-space">  </span>.btn:hover{border-color:#38414a}
+<span class="Apple-converted-space">  </span>.btn.primary{background:linear-gradient(180deg,#1f2431,#19202b); border-color:#2a3645; color:#e6f0ff}
+<span class="Apple-converted-space">  </span>.btn.success{background:#113630; border-color:#1b5046}
+<span class="Apple-converted-space">  </span>.btn.warn{background:#3a2f12; border-color:#5f4a1a}
+<span class="Apple-converted-space">  </span>.btn.ghost{background:transparent}
+<span class="Apple-converted-space">  </span>.progress{height:10px; background:#0d1116; border:1px solid var(--border); border-radius:999px; overflow:hidden; margin-top:10px}
+<span class="Apple-converted-space">  </span>.progress span{display:block; height:100%; width:0%; background:linear-gradient(90deg,#6ea8fe,#65d6ff)}
+<span class="Apple-converted-space">  </span>table{width:100%; border-collapse:collapse; margin-top:8px; background:#0f1116; border-radius:10px; overflow:hidden}
+<span class="Apple-converted-space">  </span>th, td{padding:10px 10px; border-bottom:1px solid #1d2229; vertical-align:top}
+<span class="Apple-converted-space">  </span>th{position:sticky; top:0; background:#12151b; z-index:1; text-align:left; font-weight:600; color:#d7e3ff}
+<span class="Apple-converted-space">  </span>tbody tr:last-child td{border-bottom:none}
+<span class="Apple-converted-space">  </span>.pill{display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; letter-spacing:.2px}
+<span class="Apple-converted-space">  </span>.pill.red{background:color-mix(in oklab, var(--red) 30%, transparent); color:#ffd7d7; border:1px solid color-mix(in oklab, var(--red) 50%, #000 40%)}
+<span class="Apple-converted-space">  </span>.pill.yellow{background:color-mix(in oklab, var(--yellow) 25%, transparent); color:#fff2cc; border:1px solid color-mix(in oklab, var(--yellow) 45%, #000 40%)}
+<span class="Apple-converted-space">  </span>.pill.green{background:color-mix(in oklab, var(--green) 22%, transparent); color:#d7fff1; border:1px solid color-mix(in oklab, var(--green) 40%, #000 40%)}
+<span class="Apple-converted-space">  </span>.muted{color:var(--muted)}
+<span class="Apple-converted-space">  </span>.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+<span class="Apple-converted-space">  </span>.hint{font-size:12px; color:var(--muted); margin-top:6px}
+<span class="Apple-converted-space">  </span>.grid{display:grid; grid-template-columns:1fr; gap:14px}
+<span class="Apple-converted-space">  </span>@media (min-width:900px){ .grid{grid-template-columns: 1.1fr .9fr} }
+<span class="Apple-converted-space">  </span>.hidden{display:none !important}
+<span class="Apple-converted-space">  </span>.footer-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+<span class="Apple-converted-space">  </span>.small{font-size:12px}
+<span class="Apple-converted-space">  </span>.kbd{padding:.2rem .45rem; border:1px solid var(--border); border-bottom-width:2px; border-radius:6px; background:#11141a; font:12px ui-monospace,monospace; color:#ddecff}
+<span class="Apple-converted-space">  </span>.tag{font-size:11px; padding:2px 7px; border-radius:6px; border:1px solid var(--border); color:#cfe1ff}
+<span class="Apple-converted-space">  </span>.right{float:right}
+</style>
+</head>
+<body>
+<header>
+<span class="Apple-converted-space">  </span><h1>Receipt → Storage &amp; Expiration Chart</h1>
+<span class="Apple-converted-space">  </span><p>Upload a photo of your grocery receipt. I’ll OCR it, detect the date, and build a color-coded chart with storage tips and weekday expiration.</p>
+</header>
+<br>
+<main>
+<span class="Apple-converted-space">  </span><section class="controls">
+<span class="Apple-converted-space">    </span><div class="grid">
+<span class="Apple-converted-space">      </span><div>
+<span class="Apple-converted-space">        </span><label>Upload receipt image (JPG/PNG)</label>
+<span class="Apple-converted-space">        </span><input id="fileInput" type="file" accept="image/*" />
+<span class="Apple-converted-space">        </span><div class="hint">Good lighting helps OCR. Crop to the receipt if possible.</div>
+<br>
+<span class="Apple-converted-space">        </span><div id="ocrStatus" class="hint" style="margin-top:8px"></div>
+<span class="Apple-converted-space">        </span><div class="progress hidden" id="progress"><span id="bar"></span></div>
+<br>
+<span class="Apple-converted-space">        </span><div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+<span class="Apple-converted-space">          </span><button class="btn primary" id="runOcrBtn">Run OCR &amp; Build Chart</button>
+<span class="Apple-converted-space">          </span><button class="btn ghost" id="sampleBtn" title="Uses the Eataly receipt text from your example">Use sample text</button>
+<span class="Apple-converted-space">          </span><button class="btn" id="pasteBtn">Paste text</button>
+<span class="Apple-converted-space">        </span></div>
+<span class="Apple-converted-space">      </span></div>
+<br>
+<span class="Apple-converted-space">      </span><div>
+<span class="Apple-converted-space">        </span><label>Detected/Chosen purchase date</label>
+<span class="Apple-converted-space">        </span><input id="purchaseDate" type="date" />
+<span class="Apple-converted-space">        </span><div class="hint">If I can’t find the date on the receipt, set it here.</div>
+<br>
+<span class="Apple-converted-space">        </span><label style="margin-top:12px">Shelf life presets (you can edit per item later)</label>
+<span class="Apple-converted-space">        </span><select id="presetSelect">
+<span class="Apple-converted-space">          </span><option value="default">Default guide</option>
+<span class="Apple-converted-space">          </span><option value="conservative">Conservative (earlier)</option>
+<span class="Apple-converted-space">          </span><option value="liberal">Liberal (later)</option>
+<span class="Apple-converted-space">        </span></select>
+<br>
+<span class="Apple-converted-space">        </span><div class="hint small">Categories include: fish, cooked salads, yogurt, cucumbers, fresh herbs, onions/shallots, chocolate/dessert, and a generic fallback.</div>
+<span class="Apple-converted-space">      </span></div>
+<span class="Apple-converted-space">    </span></div>
+<span class="Apple-converted-space">  </span></section>
+<br>
+<span class="Apple-converted-space">  </span><section class="output">
+<span class="Apple-converted-space">    </span><div class="row" style="margin-bottom:8px">
+<span class="Apple-converted-space">      </span><div>
+<span class="Apple-converted-space">        </span><strong>Parsed items</strong>
+<span class="Apple-converted-space">        </span><span class="tag" id="dateBadge"></span>
+<span class="Apple-converted-space">      </span></div>
+<span class="Apple-converted-space">      </span><div class="right small muted">
+<span class="Apple-converted-space">        </span>Tip: click any shelf-life to edit; the expiration &amp; color update automatically.
+<span class="Apple-converted-space">      </span></div>
+<span class="Apple-converted-space">    </span></div>
+<br>
+<span class="Apple-converted-space">    </span><div id="tableWrap" class="hidden">
+<span class="Apple-converted-space">      </span><table id="resultTable" aria-label="Expiration table">
+<span class="Apple-converted-space">        </span><thead>
+<span class="Apple-converted-space">          </span><tr>
+<span class="Apple-converted-space">            </span><th style="width:32%">Item</th>
+<span class="Apple-converted-space">            </span><th style="width:26%">How to store</th>
+<span class="Apple-converted-space">            </span><th style="width:16%">Shelf life</th>
+<span class="Apple-converted-space">            </span><th style="width:18%">Expires</th>
+<span class="Apple-converted-space">            </span><th style="width:8%">Flag</th>
+<span class="Apple-converted-space">          </span></tr>
+<span class="Apple-converted-space">        </span></thead>
+<span class="Apple-converted-space">        </span><tbody id="tbody"></tbody>
+<span class="Apple-converted-space">      </span></table>
+<br>
+<span class="Apple-converted-space">      </span><div class="footer-actions">
+<span class="Apple-converted-space">        </span><button class="btn success" id="downloadCsv">Download CSV</button>
+<span class="Apple-converted-space">        </span><button class="btn warn" id="printBtn">Print</button>
+<span class="Apple-converted-space">        </span><button class="btn" id="copyBtn">Copy table text</button>
+<span class="Apple-converted-space">      </span></div>
+<span class="Apple-converted-space">    </span></div>
+<br>
+<span class="Apple-converted-space">    </span><div id="emptyState" class="muted">
+<span class="Apple-converted-space">      </span>No results yet. Upload a receipt and press <strong>Run OCR</strong>, or click <strong>Use sample text</strong>.
+<span class="Apple-converted-space">    </span></div>
+<br>
+<span class="Apple-converted-space">    </span><details style="margin-top:12px">
+<span class="Apple-converted-space">      </span><summary class="small">Show raw OCR text</summary>
+<span class="Apple-converted-space">      </span><pre id="rawText" class="mono" style="white-space:pre-wrap; background:#0c0f14; border:1px solid #1b212a; border-radius:8px; padding:10px; max-height:240px; overflow:auto"></pre>
+<span class="Apple-converted-space">    </span></details>
+<span class="Apple-converted-space">  </span></section>
+<br>
+<span class="Apple-converted-space">  </span><section class="about small muted">
+<span class="Apple-converted-space">    </span><strong>Notes &amp; assumptions</strong><br>
+<span class="Apple-converted-space">    </span>• OCR isn’t perfect — I let you edit shelf life / names inline. <br>
+<span class="Apple-converted-space">    </span>• Expiration rules are estimates. When in doubt, trust the package label or nose test. <br>
+<span class="Apple-converted-space">    </span>• Color flags: <span class="pill red">≤3 days</span>, <span class="pill yellow">4–10 days</span>, <span class="pill green">>10 days</span>. <br>
+<span class="Apple-converted-space">  </span></section>
+</main>
+<br>
+<!-- Tesseract.js (client-side OCR) -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+/* --------------------- utilities ---------------------- */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+<br>
+function fmtDate(d){
+<span class="Apple-converted-space">  </span>const dt = new Date(d);
+<span class="Apple-converted-space">  </span>const y = dt.getFullYear();
+<span class="Apple-converted-space">  </span>const m = String(dt.getMonth()+1).padStart(2,'0');
+<span class="Apple-converted-space">  </span>const day = String(dt.getDate()).padStart(2,'0');
+<span class="Apple-converted-space">  </span>return `${y}-${m}-${day}`;
+}
+function humanDate(d){
+<span class="Apple-converted-space">  </span>const dt = new Date(d);
+<span class="Apple-converted-space">  </span>return dt.toLocaleDateString(undefined,{year:'numeric', month:'short', day:'numeric'}) +
+<span class="Apple-converted-space">         </span>" (" + dt.toLocaleDateString(undefined,{weekday:'long'}) + ")";
+}
+function addDays(base, n){
+<span class="Apple-converted-space">  </span>const d = new Date(base);
+<span class="Apple-converted-space">  </span>d.setDate(d.getDate() + n);
+<span class="Apple-converted-space">  </span>return d;
+}
+function addMonths(base, n){
+<span class="Apple-converted-space">  </span>const d = new Date(base);
+<span class="Apple-converted-space">  </span>d.setMonth(d.getMonth() + n);
+<span class="Apple-converted-space">  </span>return d;
+}
+function daysBetween(a,b){ return Math.round((b-a)/(1000*60*60*24)); }
+<br>
+/* ------------- shelf-life knowledge base ------------- */
+const RULES = {
+<span class="Apple-converted-space">  </span>default: {
+<span class="Apple-converted-space">    </span>fish: {days:2, store:"Refrigerate &amp; cook within 1–2 days or freeze"},
+<span class="Apple-converted-space">    </span>cooked_salad: {days:5, store:"Refrigerate in airtight container"},
+<span class="Apple-converted-space">    </span>yogurt: {days:10, store:"Refrigerate; keep sealed"},
+<span class="Apple-converted-space">    </span>cucumber: {days:7, store:"Refrigerate in crisper drawer"},
+<span class="Apple-converted-space">    </span>herb: {days:7, store:"Wrap in damp paper towel; refrigerate in bag/jar"},
+<span class="Apple-converted-space">    </span>onion_shallot: {days:30, store:"Cool, dark, ventilated place (not fridge)"},
+<span class="Apple-converted-space">    </span>chocolate: {days:21, store:"Cool, dry place; refrigerate if warm"},
+<span class="Apple-converted-space">    </span>generic: {days:7, store:"Refrigerate; check package"}
+<span class="Apple-converted-space">  </span>},
+<span class="Apple-converted-space">  </span>conservative: {
+<span class="Apple-converted-space">    </span>fish: {days:2, store:"Refrigerate &amp; cook within 1 day or freeze"},
+<span class="Apple-converted-space">    </span>cooked_salad: {days:3, store:"Refrigerate; eat within 3 days"},
+<span class="Apple-converted-space">    </span>yogurt: {days:7, store:"Refrigerate; keep sealed"},
+<span class="Apple-converted-space">    </span>cucumber: {days:6, store:"Refrigerate in crisper drawer"},
+<span class="Apple-converted-space">    </span>herb: {days:5, store:"Wrap damp; refrigerate"},
+<span class="Apple-converted-space">    </span>onion_shallot: {days:25, store:"Cool, dark, ventilated"},
+<span class="Apple-converted-space">    </span>chocolate: {days:14, store:"Cool, dry place"},
+<span class="Apple-converted-space">    </span>generic: {days:5, store:"Refrigerate; check package"}
+<span class="Apple-converted-space">  </span>},
+<span class="Apple-converted-space">  </span>liberal: {
+<span class="Apple-converted-space">    </span>fish: {days:3, store:"Refrigerate or freeze promptly"},
+<span class="Apple-converted-space">    </span>cooked_salad: {days:6, store:"Refrigerate, airtight"},
+<span class="Apple-converted-space">    </span>yogurt: {days:12, store:"Refrigerate; keep sealed"},
+<span class="Apple-converted-space">    </span>cucumber: {days:10, store:"Refrigerate in crisper drawer"},
+<span class="Apple-converted-space">    </span>herb: {days:8, store:"Wrap damp; refrigerate"},
+<span class="Apple-converted-space">    </span>onion_shallot: {days:45, store:"Cool, dark, ventilated"},
+<span class="Apple-converted-space">    </span>chocolate: {days:30, store:"Cool, dry place"},
+<span class="Apple-converted-space">    </span>generic: {days:9, store:"Refrigerate; check package"}
+<span class="Apple-converted-space">  </span>}
+};
+<br>
+/* keyword → category map (simple heuristics) */
+const MAP = [
+<span class="Apple-converted-space">  </span>{re:/\b(salmon|cod|tuna|halibut|fillet|fish)\b/i, cat:'fish'},
+<span class="Apple-converted-space">  </span>{re:/\b(farro.*salad|potato.*salad|winter.*salad|deli.*salad)\b/i, cat:'cooked_salad'},
+<span class="Apple-converted-space">  </span>{re:/\b(yogurt|yoghurt|greek yog|labneh|kefir)\b/i, cat:'yogurt'},
+<span class="Apple-converted-space">  </span>{re:/\b(cucumber|persian)\b/i, cat:'cucumber'},
+<span class="Apple-converted-space">  </span>{re:/\b(parsley|cilantro|basil|dill|mint|herb)\b/i, cat:'herb'},
+<span class="Apple-converted-space">  </span>{re:/\b(shallot|onion)\b/i, cat:'onion_shallot'},
+<span class="Apple-converted-space">  </span>{re:/\b(chocolate|fondente|fondentenero|dessert|truffle|candy)\b/i, cat:'chocolate'}
+];
+<br>
+function categorize(name){
+<span class="Apple-converted-space">  </span>for (const m of MAP){ if (m.re.test(name)) return m.cat; }
+<span class="Apple-converted-space">  </span>return 'generic';
+}
+<br>
+/* -------------------- OCR handling -------------------- */
+const fileInput = $('#fileInput');
+const runBtn = $('#runOcrBtn');
+const sampleBtn = $('#sampleBtn');
+const pasteBtn = $('#pasteBtn');
+const progress = $('#progress');
+const bar = $('#bar');
+const statusEl = $('#ocrStatus');
+const tableWrap = $('#tableWrap');
+const tbody = $('#tbody');
+const emptyState = $('#emptyState');
+const rawText = $('#rawText');
+const purchaseDate = $('#purchaseDate');
+const dateBadge = $('#dateBadge');
+const presetSelect = $('#presetSelect');
+<br>
+purchaseDate.value = fmtDate(new Date()); // default today
+<br>
+runBtn.addEventListener('click', async ()=>{
+<span class="Apple-converted-space">  </span>let image = fileInput.files?.[0];
+<span class="Apple-converted-space">  </span>if(!image){ alert('Please choose a receipt image first (or click "Use sample text").'); return; }
+<span class="Apple-converted-space">  </span>await doOCR(image);
+});
+<br>
+sampleBtn.addEventListener('click', ()=>{
+<span class="Apple-converted-space">  </span>const txt = SAMPLE_TEXT.trim();
+<span class="Apple-converted-space">  </span>handleParsedText(txt);
+});
+<br>
+pasteBtn.addEventListener('click', ()=>{
+<span class="Apple-converted-space">  </span>const txt = prompt("Paste receipt text (or type items, one per line):","");
+<span class="Apple-converted-space">  </span>if(txt){ handleParsedText(txt); }
+});
+<br>
+async function doOCR(file){
+<span class="Apple-converted-space">  </span>statusEl.textContent = 'Starting OCR…';
+<span class="Apple-converted-space">  </span>progress.classList.remove('hidden');
+<span class="Apple-converted-space">  </span>bar.style.width = '0%';
+<br>
+<span class="Apple-converted-space">  </span>const worker = await Tesseract.createWorker('eng', 1, {
+<span class="Apple-converted-space">    </span>logger: m => {
+<span class="Apple-converted-space">      </span>if(m.status === 'recognizing text'){
+<span class="Apple-converted-space">        </span>const pct = Math.round(m.progress*100);
+<span class="Apple-converted-space">        </span>bar.style.width = pct + '%';
+<span class="Apple-converted-space">        </span>statusEl.textContent = `OCR: ${pct}%`;
+<span class="Apple-converted-space">      </span>}
+<span class="Apple-converted-space">    </span>}
+<span class="Apple-converted-space">  </span>});
+<br>
+<span class="Apple-converted-space">  </span>const { data: { text } } = await worker.recognize(file);
+<span class="Apple-converted-space">  </span>await worker.terminate();
+<br>
+<span class="Apple-converted-space">  </span>rawText.textContent = text;
+<span class="Apple-converted-space">  </span>statusEl.textContent = 'OCR complete.';
+<span class="Apple-converted-space">  </span>progress.classList.add('hidden');
+<span class="Apple-converted-space">  </span>handleParsedText(text);
+}
+<br>
+/* --------------- parse receipt → items ---------------- */
+function handleParsedText(text){
+<span class="Apple-converted-space">  </span>rawText.textContent = text;
+<br>
+<span class="Apple-converted-space">  </span>// Detect purchase date (US style mm/dd/yy or mm/dd/yyyy)
+<span class="Apple-converted-space">  </span>const dateMatch = text.match(/\b(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]([0-9]{2,4})\b/);
+<span class="Apple-converted-space">  </span>if(dateMatch){
+<span class="Apple-converted-space">    </span>let [mm, dd, yy] = [dateMatch[1], dateMatch[2], dateMatch[3]];
+<span class="Apple-converted-space">    </span>if(yy.length===2){ yy = '20' + yy; }
+<span class="Apple-converted-space">    </span>const detected = new Date(`${yy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}T12:00:00`);
+<span class="Apple-converted-space">    </span>if(!isNaN(detected)) purchaseDate.value = fmtDate(detected);
+<span class="Apple-converted-space">  </span>}
+<span class="Apple-converted-space">  </span>dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'});
+<br>
+<span class="Apple-converted-space">  </span>// Split into lines and try to extract "item — price" style rows
+<span class="Apple-converted-space">  </span>const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+<br>
+<span class="Apple-converted-space">  </span>// Heuristic: a line with some letters and a trailing price number
+<span class="Apple-converted-space">  </span>const priceRe = /(\$?\s?\d+(?:\.\d{2})?)$/;
+<span class="Apple-converted-space">  </span>const likely = lines.filter(l=>{
+<span class="Apple-converted-space">    </span>if(l.length<3) return false;
+<span class="Apple-converted-space">    </span>if(/receipt|total|subtotal|tax|change|clerk|store|nyc|visa|debit|credit|sales|card|information/i.test(l)) return false;
+<span class="Apple-converted-space">    </span>if(/^\d{5,}/.test(l)) return true; // UPC+item line (like your Eataly receipt)
+<span class="Apple-converted-space">    </span>if(/[A-Za-z]/.test(l) &amp;&amp; priceRe.test(l)) return true;
+<span class="Apple-converted-space">    </span>return false;
+<span class="Apple-converted-space">  </span>});
+<br>
+<span class="Apple-converted-space">  </span>// Build item objects
+<span class="Apple-converted-space">  </span>const items = [];
+<span class="Apple-converted-space">  </span>for(const ln of likely){
+<span class="Apple-converted-space">    </span>// If UPC + name + price (e.g., "852210005159 WHITE MOUSTACHE SUMMER PEACH 8OZ 6.79")
+<span class="Apple-converted-space">    </span>let name = ln;
+<span class="Apple-converted-space">    </span>// Remove leading long code(s)
+<span class="Apple-converted-space">    </span>name = name.replace(/^[\d\s]{6,}\s+/,'');
+<span class="Apple-converted-space">    </span>// Remove quantity/weight fragments like "0.200 lb @ $3.99/lb 0.80"
+<span class="Apple-converted-space">    </span>name = name.replace(/\b\d+(?:\.\d+)?\s*(lb|oz|@|\$|pkg|ea|ct|x|lb\.?)\b.*$/i, m=>{
+<span class="Apple-converted-space">      </span>// keep name before the weight/price cluster if there's an earlier word run
+<span class="Apple-converted-space">      </span>return '';
+<span class="Apple-converted-space">    </span>}).trim() || ln.replace(/^\d+\s+/,'');
+<span class="Apple-converted-space">    </span>// If we removed too much, fallback to original (minus trailing price)
+<span class="Apple-converted-space">    </span>if(name.length < 3){
+<span class="Apple-converted-space">      </span>name = ln.replace(priceRe,'').trim();
+<span class="Apple-converted-space">    </span>}
+<br>
+<span class="Apple-converted-space">    </span>// Extract trailing price if present (not used, but handy)
+<span class="Apple-converted-space">    </span>const pm = ln.match(priceRe);
+<span class="Apple-converted-space">    </span>const price = pm ? pm[1].replace('$','').trim() : '';
+<br>
+<span class="Apple-converted-space">    </span>// sanitize name
+<span class="Apple-converted-space">    </span>name = name.replace(/\s{2,}/g,' ').replace(/\bEA\b/i,'').trim();
+<span class="Apple-converted-space">    </span>// Prevent obvious non-item rows
+<span class="Apple-converted-space">    </span>if(/^\$/.test(name) || /TOTAL|SUBTOTAL|TAX/i.test(name)) continue;
+<br>
+<span class="Apple-converted-space">    </span>items.push({raw: ln, name, price});
+<span class="Apple-converted-space">  </span>}
+<br>
+<span class="Apple-converted-space">  </span>// Deduplicate by name (simple)
+<span class="Apple-converted-space">  </span>const seen = new Set();
+<span class="Apple-converted-space">  </span>const dedup = items.filter(x=>{
+<span class="Apple-converted-space">    </span>const key = x.name.toLowerCase();
+<span class="Apple-converted-space">    </span>if(seen.has(key)) return false;
+<span class="Apple-converted-space">    </span>seen.add(key); return true;
+<span class="Apple-converted-space">  </span>});
+<br>
+<span class="Apple-converted-space">  </span>buildTable(dedup);
+}
+<br>
+/* -------------- build interactive table --------------- */
+function shelfLifeFor(name){
+<span class="Apple-converted-space">  </span>const preset = RULES[presetSelect.value] || RULES.default;
+<span class="Apple-converted-space">  </span>const cat = categorize(name);
+<span class="Apple-converted-space">  </span>const rule = preset[cat] || preset.generic;
+<span class="Apple-converted-space">  </span>return {cat, ...rule};
+}
+<br>
+function colorFlag(days){
+<span class="Apple-converted-space">  </span>if(days <= 3) return {cls:'red', label:'Use ASAP'};
+<span class="Apple-converted-space">  </span>if(days <= 10) return {cls:'yellow', label:'Use Soon'};
+<span class="Apple-converted-space">  </span>return {cls:'green', label:'Lasts a while'};
+}
+<br>
+function buildTable(items){
+<span class="Apple-converted-space">  </span>tbody.innerHTML = '';
+<span class="Apple-converted-space">  </span>const base = new Date(purchaseDate.value);
+<br>
+<span class="Apple-converted-space">  </span>if(!items.length){
+<span class="Apple-converted-space">    </span>tableWrap.classList.add('hidden');
+<span class="Apple-converted-space">    </span>emptyState.classList.remove('hidden');
+<span class="Apple-converted-space">    </span>return;
+<span class="Apple-converted-space">  </span>}
+<br>
+<span class="Apple-converted-space">  </span>for(const it of items){
+<span class="Apple-converted-space">    </span>const rule = shelfLifeFor(it.name);
+<span class="Apple-converted-space">    </span>const tr = document.createElement('tr');
+<br>
+<span class="Apple-converted-space">    </span>// Compute expiry
+<span class="Apple-converted-space">    </span>let expires;
+<span class="Apple-converted-space">    </span>if(rule.months){ expires = addMonths(base, rule.months); }
+<span class="Apple-converted-space">    </span>else { expires = addDays(base, rule.days); }
+<br>
+<span class="Apple-converted-space">    </span>const days = daysBetween(base, expires);
+<span class="Apple-converted-space">    </span>const flag = colorFlag(days);
+<br>
+<span class="Apple-converted-space">    </span>tr.innerHTML = `
+<span class="Apple-converted-space">      </span><td><div style="font-weight:600">${escapeHtml(titleCase(it.name))}</div>
+<span class="Apple-converted-space">          </span><div class="muted mono small">${escapeHtml(it.raw)}</div></td>
+<span class="Apple-converted-space">      </span><td>${escapeHtml(rule.store)}</td>
+<span class="Apple-converted-space">      </span><td>
+<span class="Apple-converted-space">        </span><input class="lifeInput" type="text" value="${rule.days ?? (rule.months*30)} days"<span class="Apple-converted-space"> </span>
+<span class="Apple-converted-space">               </span>style="width:120px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:#0f1217; color:var(--txt)">
+<span class="Apple-converted-space">        </span><div class="hint small">edit (e.g. “5 days” or “2 months”)</div>
+<span class="Apple-converted-space">      </span></td>
+<span class="Apple-converted-space">      </span><td class="expiresCell"><strong>${escapeHtml(humanDate(expires))}</strong></td>
+<span class="Apple-converted-space">      </span><td class="flagCell"><span class="pill ${flag.cls}">${flag.label}</span></td>
+<span class="Apple-converted-space">    </span>`;
+<span class="Apple-converted-space">    </span>tbody.appendChild(tr);
+<span class="Apple-converted-space">  </span>}
+<br>
+<span class="Apple-converted-space">  </span>tableWrap.classList.remove('hidden');
+<span class="Apple-converted-space">  </span>emptyState.classList.add('hidden');
+<span class="Apple-converted-space">  </span>dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'});
+<br>
+<span class="Apple-converted-space">  </span>// attach editors
+<span class="Apple-converted-space">  </span>$$('#resultTable .lifeInput').forEach((inp, idx)=>{
+<span class="Apple-converted-space">    </span>inp.addEventListener('change', ()=>{
+<span class="Apple-converted-space">      </span>const val = inp.value.trim().toLowerCase();
+<span class="Apple-converted-space">      </span>let nDays = 7;
+<span class="Apple-converted-space">      </span>const m = val.match(/(\d+(?:\.\d+)?)\s*(day|days|d|month|months|mo)/);
+<span class="Apple-converted-space">      </span>if(m){
+<span class="Apple-converted-space">        </span>const num = parseFloat(m[1]);
+<span class="Apple-converted-space">        </span>const unit = m[2];
+<span class="Apple-converted-space">        </span>nDays = /mo|month/.test(unit) ? Math.round(num*30) : Math.round(num);
+<span class="Apple-converted-space">      </span>}
+<span class="Apple-converted-space">      </span>const base = new Date(purchaseDate.value);
+<span class="Apple-converted-space">      </span>const newExp = addDays(base, nDays);
+<br>
+<span class="Apple-converted-space">      </span>const row = inp.closest('tr');
+<span class="Apple-converted-space">      </span>row.querySelector('.expiresCell').innerHTML = `<strong>${escapeHtml(humanDate(newExp))}</strong>`;
+<span class="Apple-converted-space">      </span>const flag = colorFlag(nDays);
+<span class="Apple-converted-space">      </span>const flagCell = row.querySelector('.flagCell');
+<span class="Apple-converted-space">      </span>flagCell.innerHTML = `<span class="pill ${flag.cls}">${flag.label}</span>`;
+<span class="Apple-converted-space">    </span>});
+<span class="Apple-converted-space">  </span>});
+}
+<br>
+/* --------------------- actions ------------------------ */
+$('#downloadCsv').addEventListener('click', ()=>{
+<span class="Apple-converted-space">  </span>const rows = [['Item','How to store','Shelf life','Expires','Flag']];
+<span class="Apple-converted-space">  </span>$$('#resultTable tbody tr').forEach(tr=>{
+<span class="Apple-converted-space">    </span>const tds = tr.querySelectorAll('td');
+<span class="Apple-converted-space">    </span>rows.push([
+<span class="Apple-converted-space">      </span>tds[0].firstElementChild.textContent.trim(),
+<span class="Apple-converted-space">      </span>tds[1].textContent.trim(),
+<span class="Apple-converted-space">      </span>tds[2].querySelector('input').value.trim(),
+<span class="Apple-converted-space">      </span>tds[3].textContent.trim(),
+<span class="Apple-converted-space">      </span>tds[4].textContent.trim()
+<span class="Apple-converted-space">    </span>]);
+<span class="Apple-converted-space">  </span>});
+<span class="Apple-converted-space">  </span>const csv = rows.map(r=>r.map(s=>`"${s.replace(/"/g,'""')}"`).join(',')).join('\n');
+<span class="Apple-converted-space">  </span>const blob = new Blob([csv], {type:'text/csv'});
+<span class="Apple-converted-space">  </span>const url = URL.createObjectURL(blob);
+<span class="Apple-converted-space">  </span>const a = Object.assign(document.createElement('a'), {href:url, download:`receipt-expirations-${fmtDate(new Date())}.csv`});
+<span class="Apple-converted-space">  </span>document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+$('#printBtn').addEventListener('click', ()=> window.print());
+$('#copyBtn').addEventListener('click', ()=>{
+<span class="Apple-converted-space">  </span>const lines = [];
+<span class="Apple-converted-space">  </span>$$('#resultTable tbody tr').forEach(tr=>{
+<span class="Apple-converted-space">    </span>const [item, store, life, exp, flag] = tr.querySelectorAll('td');
+<span class="Apple-converted-space">    </span>lines.push(`${item.firstElementChild.textContent} — ${store.textContent} — ${life.querySelector('input').value} — ${exp.textContent} — ${flag.textContent}`);
+<span class="Apple-converted-space">  </span>});
+<span class="Apple-converted-space">  </span>navigator.clipboard.writeText(lines.join('\n'));
+<span class="Apple-converted-space">  </span>alert('Table copied to clipboard.');
+});
+purchaseDate.addEventListener('change', ()=>{
+<span class="Apple-converted-space">  </span>// recompute expirations for all rows
+<span class="Apple-converted-space">  </span>$$('#resultTable tbody tr').forEach(tr=>{
+<span class="Apple-converted-space">    </span>const inp = tr.querySelector('.lifeInput');
+<span class="Apple-converted-space">    </span>inp.dispatchEvent(new Event('change'));
+<span class="Apple-converted-space">  </span>});
+<span class="Apple-converted-space">  </span>dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'});
+});
+<br>
+/* ---------------- sample (your Eataly) ---------------- */
+const SAMPLE_TEXT = `
+EATALY
+200 5th Ave. New York City, NY 10010
+10/28/25 5:45 PM
+Clerk: Cyrus Kisitu
+852210005159 WHITE MOUSTACHE SUMMER PEACH 8OZ 6.79
+852210005012 WHITE MOUSTACHE GREEK YOG 8 OZ 6.79
+34047 ORGANIC SALMON FILLET 0.15
+0.005 lb @ $29.99/lb
+2063012 FARRO WINTER SALAD 14.99NYT
+8006380230039 MINI FONDENTENERO 16 13.99NYT
+05783690001 CUCUMBER PERSIAN ORGANIC 12X1LB 4.99
+10634 ONION SHALLOT 0.200 lb @ $3.99/lb 0.80
+10397 HERB PARSLEY ITALIAN FRESH 1.99
+SUBTOTAL 50.49
+NYC SALES TAX 8.875% 2.57
+TOTAL 53.06
+`;
+<br>
+/* ------------------- helpers -------------------------- */
+function titleCase(s){ return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
+function escapeHtml(s){ return s.replace(/[&amp;<>"']/g, c => ({'&amp;':'&amp;amp;','<':'&amp;lt;','>':'&amp;gt;','"':'&amp;quot;',"'":'&amp;#39;'}[c])); }
+</script>
+</body>
+</html>
 </body>
 </html>
