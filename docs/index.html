@@ -1,251 +1,9 @@
-<!-- Tesseract.js (client-side OCR) -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script>
-/* --------------------- utilities ---------------------- */
-const $ = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-
-function fmtDate(d){
-  const dt = new Date(d);
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth()+1).padStart(2,'0');
-  const day = String(dt.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-}
-function humanDate(d){
-  const dt = new Date(d);
-  return dt.toLocaleDateString(undefined,{year:'numeric', month:'short', day:'numeric'}) +
-         " (" + dt.toLocaleDateString(undefined,{weekday:'long'}) + ")";
-}
-function addDays(base, n){
-  const d = new Date(base);
-  d.setDate(d.getDate() + n);
-  return d;
-}
-function addMonths(base, n){
-  const d = new Date(base);
-  d.setMonth(d.getMonth() + n);
-  return d;
-}
-function daysBetween(a,b){ return Math.round((b-a)/(1000*60*60*24)); }
-
-/* ------------- shelf-life knowledge base ------------- */
-const RULES = {
-  default: {
-    fish:           {days:2,  store:"Refrigerate; cook within 1–2 days or freeze"},
-    cooked_salad:   {days:5,  store:"Refrigerate in airtight container"},
-    yogurt:         {days:10, store:"Refrigerate; keep sealed"},
-    cucumber:       {days:7,  store:"Refrigerate in crisper drawer"},
-    herb:           {days:7,  store:"Wrap in damp paper towel; refrigerate in bag/jar"},
-    onion_shallot:  {days:30, store:"Cool, dark, ventilated place (not fridge)"},
-    chocolate:      {days:30, store:"Cool, dry place"},
-    generic:        {days:7,  store:"Refrigerate; check package"}
-  },
-  conservative: {
-    fish:           {days:2,  store:"Refrigerate; cook within 1 day or freeze"},
-    cooked_salad:   {days:3,  store:"Refrigerate; eat within 3 days"},
-    yogurt:         {days:7,  store:"Refrigerate; keep sealed"},
-    cucumber:       {days:6,  store:"Refrigerate in crisper drawer"},
-    herb:           {days:5,  store:"Wrap damp; refrigerate"},
-    onion_shallot:  {days:25, store:"Cool, dark, ventilated"},
-    chocolate:      {days:21, store:"Cool, dry place"},
-    generic:        {days:5,  store:"Refrigerate; check package"}
-  },
-  liberal: {
-    fish:           {days:3,  store:"Refrigerate or freeze promptly"},
-    cooked_salad:   {days:6,  store:"Refrigerate, airtight"},
-    yogurt:         {days:12, store:"Refrigerate; keep sealed"},
-    cucumber:       {days:10, store:"Refrigerate in crisper drawer"},
-    herb:           {days:8,  store:"Wrap damp; refrigerate"},
-    onion_shallot:  {days:45, store:"Cool, dark, ventilated"},
-    chocolate:      {days:45, store:"Cool, dry place"},
-    generic:        {days:9,  store:"Refrigerate; check package"}
-  }
-};
-
-/* ❗ Only these categories will show up in the table = perishables */
-const PERISHABLE_CATS = [
-  'fish',
-  'cooked_salad',
-  'yogurt',
-  'cucumber',
-  'herb',
-  'onion_shallot'
-];
-
-/* keyword → category map (simple heuristics) */
-const MAP = [
-  {re:/\b(salmon|cod|tuna|halibut|fillet|fish)\b/i,             cat:'fish'},
-  {re:/\b(farro.*salad|potato.*salad|winter.*salad|deli.*salad)\b/i, cat:'cooked_salad'},
-  {re:/\b(yogurt|yoghurt|greek yog|labneh|kefir)\b/i,           cat:'yogurt'},
-  {re:/\b(cucumber|persian)\b/i,                               cat:'cucumber'},
-  {re:/\b(parsley|cilantro|basil|dill|mint|herb)\b/i,          cat:'herb'},
-  {re:/\b(shallot|onion)\b/i,                                  cat:'onion_shallot'},
-  {re:/\b(chocolate|fondente|fondentenero|dessert|truffle)\b/i, cat:'chocolate'}
-];
-
-function categorize(name){
-  for (const m of MAP){ if (m.re.test(name)) return m.cat; }
-  return 'generic';
-}
-
-/* nicely readable label for the little tag next to the item name */
-function catLabel(cat){
-  switch(cat){
-    case 'fish':          return 'Fish / Seafood';
-    case 'cooked_salad':  return 'Prepared Salad';
-    case 'yogurt':        return 'Dairy / Yogurt';
-    case 'cucumber':      return 'Produce';
-    case 'herb':          return 'Fresh Herb';
-    case 'onion_shallot': return 'Onion / Shallot';
-    default:              return 'Perishable';
-  }
-}
-
-/* -------------------- OCR handling -------------------- */
-const fileInput   = $('#fileInput');
-const runBtn      = $('#runOcrBtn');
-const sampleBtn   = $('#sampleBtn');
-const pasteBtn    = $('#pasteBtn');
-const progress    = $('#progress');
-const bar         = $('#bar');
-const statusEl    = $('#ocrStatus');
-const tableWrap   = $('#tableWrap');
-const tbody       = $('#tbody');
-const emptyState  = $('#emptyState');
-const rawText     = $('#rawText');
-const purchaseDate= $('#purchaseDate');
-const dateBadge   = $('#dateBadge');
-const presetSelect= $('#presetSelect');
-
-purchaseDate.value = fmtDate(new Date()); // default today
-
-runBtn.addEventListener('click', async ()=>{
-  let image = fileInput.files?.[0];
-  if(!image){
-    alert('Please choose a receipt image first (or click "Use sample text").');
-    return;
-  }
-  await doOCR(image);
-});
-
-sampleBtn.addEventListener('click', ()=>{
-  const txt = SAMPLE_TEXT.trim();
-  handleParsedText(txt);
-});
-
-pasteBtn.addEventListener('click', ()=>{
-  const txt = prompt("Paste receipt text (or type items, one per line):","");
-  if(txt){ handleParsedText(txt); }
-});
-
-async function doOCR(file){
-  statusEl.textContent = 'Starting OCR…';
-  progress.classList.remove('hidden');
-  bar.style.width = '0%';
-
-  const worker = await Tesseract.createWorker('eng', 1, {
-    logger: m => {
-      if(m.status === 'recognizing text'){
-        const pct = Math.round(m.progress*100);
-        bar.style.width = pct + '%';
-        statusEl.textContent = `OCR: ${pct}%`;
-      }
-    }
-  });
-
-  const { data: { text } } = await worker.recognize(file);
-  await worker.terminate();
-
-  rawText.textContent = text;
-  statusEl.textContent = 'OCR complete.';
-  progress.classList.add('hidden');
-  handleParsedText(text);
-}
-
-/* --------------- parse receipt → items ---------------- */
-function handleParsedText(text){
-  rawText.textContent = text;
-
-  // detect purchase date (US style mm/dd/yy or mm/dd/yyyy)
-  const dateMatch = text.match(/\b(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]([0-9]{2,4})\b/);
-  if(dateMatch){
-    let [mm, dd, yy] = [dateMatch[1], dateMatch[2], dateMatch[3]];
-    if(yy.length===2){ yy = '20' + yy; }
-    const detected = new Date(`${yy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}T12:00:00`);
-    if(!isNaN(detected)) purchaseDate.value = fmtDate(detected);
-  }
-  dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(
-    undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'}
-  );
-
-  const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-  const priceRe = /(\$?\s?\d+(?:\.\d{2})?)$/;
-
-  const likely = lines.filter(l=>{
-    if(l.length<3) return false;
-    if(/receipt|total|subtotal|tax|change|clerk|store|visa|debit|credit|sales|card|information/i.test(l)) return false;
-    if(/^\d{5,}/.test(l)) return true; // UPC line
-    if(/[A-Za-z]/.test(l) && priceRe.test(l)) return true;
-    return false;
-  });
-
-  const items = [];
-  for(const ln of likely){
-    let name = ln;
-
-    // remove leading long numeric code
-    name = name.replace(/^[\d\s]{6,}\s+/,'');
-
-    // remove weight/price junk at the end
-    name = name.replace(/\b\d+(?:\.\d+)?\s*(lb|oz|@|\$|pkg|ea|ct|x|lb\.?)\b.*$/i,'').trim()
-        || ln.replace(/^\d+\s+/,'').trim();
-
-    // if still ugly, strip trailing price
-    const pm = ln.match(priceRe);
-    const price = pm ? pm[1].replace('$','').trim() : '';
-    if(name.length < 3){
-      name = ln.replace(priceRe,'').trim();
-    }
-
-    name = name.replace(/\s{2,}/g,' ').replace(/\bEA\b/i,'').trim();
-    if(!name || /^\$/.test(name)) continue;
-
-    items.push({ raw: ln, name, price });
-  }
-
-  // dedupe by cleaned name
-  const seen = new Set();
-  const dedup = items.filter(x=>{
-    const key = x.name.toLowerCase();
-    if(seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  buildTable(dedup);
-}
-
-/* -------------- shelf life + colors ------------------- */
-function shelfLifeFor(name, catOverride){
-  const preset = RULES[presetSelect.value] || RULES.default;
-  const cat = catOverride || categorize(name);
-  const rule = preset[cat] || preset.generic;
-  return {cat, ...rule};
-}
-
-function colorFlag(days){
-  if(days <= 3)  return {cls:'red',    label:'Use ASAP'};
-  if(days <= 10) return {cls:'yellow', label:'Use Soon'};
-  return            {cls:'green',  label:'Lasts a while'};
-}
-
-/* -------------- build clearer, sorted table ----------- */
+/* -------------- build clearer, sorted table WITH EDITABLE NAMES ----------- */
 function buildTable(items){
   tbody.innerHTML = '';
   const base = new Date(purchaseDate.value);
 
-  // 1) categorize and keep ONLY perishables
+  // categorize and keep only perishables
   const withCats = items.map(it => {
     const cat = categorize(it.name);
     return {...it, cat};
@@ -260,55 +18,93 @@ function buildTable(items){
     return;
   }
 
-  // 2) compute shelf life + expiration and sort by soonest expiring
   const enriched = perishables.map(it=>{
     const rule = shelfLifeFor(it.name, it.cat);
-    let expires;
-    let nDays;
+    let expires, nDays;
     if(rule.months){
       expires = addMonths(base, rule.months);
       nDays = daysBetween(base, expires);
-    }else{
+    } else {
       nDays = rule.days;
       expires = addDays(base, nDays);
     }
     return { item: it, rule, expires, nDays };
   });
 
+  // sort by soonest expiring
   enriched.sort((a,b)=> a.expires - b.expires);
 
-  // 3) build a simpler, easier-to-read table
-  for(const row of enriched){
+  // build table
+  enriched.forEach((row, idx)=>{
     const { item, rule, expires, nDays } = row;
     const flag = colorFlag(nDays);
+
     const tr = document.createElement('tr');
 
     tr.innerHTML = `
       <td>
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <span style="font-weight:600;">${escapeHtml(titleCase(item.name))}</span>
-          <span class="tag small">${escapeHtml(catLabel(rule.cat))}</span>
-        </div>
+        <input 
+          class="nameInput"
+          data-index="${idx}"
+          value="${escapeHtml(titleCase(item.name))}"
+          style="width:95%; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:#0f1217; color:var(--txt); font-weight:600;"
+        >
+        <div class="tag small">${escapeHtml(catLabel(rule.cat))}</div>
       </td>
-      <td>${escapeHtml(rule.store)}</td>
+
+      <td class="storeCell">${escapeHtml(rule.store)}</td>
+
       <td>
         <input class="lifeInput" type="text"
-               value="${rule.days ?? (rule.months*30)} days"
-               style="width:110px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:#0f1217; color:var(--txt)">
+          value="${rule.days ?? (rule.months*30)} days"
+          style="width:110px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:#0f1217; color:var(--txt)">
       </td>
+
       <td class="expiresCell"><strong>${escapeHtml(humanDate(expires))}</strong></td>
+
       <td class="flagCell"><span class="pill ${flag.cls}">${flag.label}</span></td>
     `;
+
     tbody.appendChild(tr);
-  }
+  });
 
   tableWrap.classList.remove('hidden');
   emptyState.classList.add('hidden');
-  dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(
-    undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'}
-  );
+  dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'});
 
-  // 4) when user edits shelf life, recompute expiration + color
+  /* --- NAME EDIT HANDLER → auto update category, instructions, expiration, colors --- */
+  $$('#resultTable .nameInput').forEach((inp)=>{
+    inp.addEventListener('change', ()=>{
+      const tr = inp.closest('tr');
+      const newName = inp.value.trim();
+      const cat = categorize(newName);
+
+      // update storage instructions
+      const rule = shelfLifeFor(newName, cat);
+      tr.querySelector('.storeCell').textContent = rule.store;
+
+      // get shelf life
+      const lifeInput = tr.querySelector('.lifeInput');
+      let nDays = parseInt(lifeInput.value) || rule.days || 7;
+
+      const base = new Date(purchaseDate.value);
+      const newExp = addDays(base, nDays);
+
+      // update expiration
+      tr.querySelector('.expiresCell').innerHTML =
+        `<strong>${escapeHtml(humanDate(newExp))}</strong>`;
+
+      // update urgency flag
+      const flag = colorFlag(nDays);
+      tr.querySelector('.flagCell').innerHTML =
+        `<span class="pill ${flag.cls}">${flag.label}</span>`;
+
+      // update category tag
+      tr.querySelector('.tag').textContent = catLabel(cat);
+    });
+  });
+
+  /* existing shelf-life editor listener stays the same */
   $$('#resultTable .lifeInput').forEach((inp)=>{
     inp.addEventListener('change', ()=>{
       const val = inp.value.trim().toLowerCase();
@@ -332,84 +128,3 @@ function buildTable(items){
     });
   });
 }
-
-/* --------------------- actions ------------------------ */
-$('#downloadCsv').addEventListener('click', ()=>{
-  const rows = [['Item','How to store','Shelf life','Expires','Flag']];
-  $$('#resultTable tbody tr').forEach(tr=>{
-    const tds = tr.querySelectorAll('td');
-    rows.push([
-      tds[0].innerText.trim(),
-      tds[1].innerText.trim(),
-      tds[2].querySelector('input').value.trim(),
-      tds[3].innerText.trim(),
-      tds[4].innerText.trim()
-    ]);
-  });
-  const csv = rows.map(r=>r.map(s=>`"${s.replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement('a'), {
-    href:url,
-    download:`receipt-expirations-${fmtDate(new Date())}.csv`
-  });
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-});
-
-$('#printBtn').addEventListener('click', ()=> window.print());
-
-$('#copyBtn').addEventListener('click', ()=>{
-  const lines = [];
-  $$('#resultTable tbody tr').forEach(tr=>{
-    const [item, store, life, exp, flag] = tr.querySelectorAll('td');
-    lines.push(
-      `${item.innerText.trim()} — ${store.innerText.trim()} — ${life.querySelector('input').value} — ${exp.innerText.trim()} — ${flag.innerText.trim()}`
-    );
-  });
-  navigator.clipboard.writeText(lines.join('\n'));
-  alert('Table copied to clipboard.');
-});
-
-purchaseDate.addEventListener('change', ()=>{
-  // recompute expirations for all rows when user changes purchase date
-  $$('#resultTable .lifeInput').forEach(inp=>{
-    inp.dispatchEvent(new Event('change'));
-  });
-  dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(
-    undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'}
-  );
-});
-
-/* ---------------- sample text (Eataly) ---------------- */
-const SAMPLE_TEXT = `
-EATALY
-200 5th Ave. New York City, NY 10010
-10/28/25 5:45 PM
-Clerk: Cyrus Kisitu
-852210005159 WHITE MOUSTACHE SUMMER PEACH 8OZ 6.79
-852210005012 WHITE MOUSTACHE GREEK YOG 8 OZ 6.79
-34047 ORGANIC SALMON FILLET 0.15
-0.005 lb @ $29.99/lb
-2063012 FARRO WINTER SALAD 14.99NYT
-8006380230039 MINI FONDENTENERO 16 13.99NYT
-05783690001 CUCUMBER PERSIAN ORGANIC 12X1LB 4.99
-10634 ONION SHALLOT 0.200 lb @ $3.99/lb 0.80
-10397 HERB PARSLEY ITALIAN FRESH 1.99
-SUBTOTAL 50.49
-NYC SALES TAX 8.875% 2.57
-TOTAL 53.06
-`;
-
-/* ------------------- helpers -------------------------- */
-function titleCase(s){
-  return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
-}
-function escapeHtml(s){
-  return s.replace(/[&<>"']/g, c => (
-    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
-  ));
-}
-</script>
