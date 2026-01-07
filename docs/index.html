@@ -5,35 +5,304 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FreshScan</title>
 
-    <!-- If you have any framework/theme CSS, it should load BEFORE your styles.css -->
-    <!-- Example: <link rel="stylesheet" href="./someTheme.css" /> -->
+    <!-- Tesseract OCR (browser) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-    <!-- Your pink theme MUST load last so it wins -->
+    <!-- If you have other CSS, load it first -->
+    <!-- <link rel="stylesheet" href="./other.css" /> -->
+
+    <!-- Your customized pink theme MUST load last so it wins -->
     <link rel="stylesheet" href="./styles.css" />
+
+    <!-- Fallback pink styling (in case styles.css doesn't load) -->
+    <style>
+      :root{
+        --bg:#fff3f8; --panel:#fff; --text:#2b1b24; --muted:#7a4b61;
+        --pink:#ff4da6; --pink2:#ff7cc2; --border:rgba(255,77,166,.25);
+        --shadow:0 10px 30px rgba(255,77,166,.18);
+      }
+      html,body{background:var(--bg); color:var(--text); font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; margin:0;}
+      .container{max-width:900px; margin:24px auto; padding:0 16px;}
+      .card{background:var(--panel); border:1px solid var(--border); box-shadow:var(--shadow); border-radius:18px;}
+      .section{padding:18px; margin-top:14px;}
+      .muted{color:var(--muted);}
+      .small{font-size:13px;}
+      .btn{background:linear-gradient(90deg,var(--pink),var(--pink2)); color:#fff; border:0; border-radius:14px; padding:10px 14px; font-weight:800; cursor:pointer;}
+      .btn:disabled{opacity:.55; cursor:not-allowed;}
+      input[type="file"]{padding:10px 0;}
+      textarea{width:100%; border:1px solid var(--border); border-radius:12px; padding:10px 12px; font-family:inherit;}
+      #previewImg{max-width:100%; margin-top:12px; border-radius:16px; display:none; pointer-events:none;}
+      /* Ensure button is clickable and not blocked by preview layers */
+      #runBtn{position:relative; z-index:10; pointer-events:auto;}
+    </style>
   </head>
 
   <body>
     <main class="container">
-      <header class="card" style="padding: 18px;">
-        <h1 style="margin: 0;">FreshScan</h1>
-        <p class="muted" style="margin: 6px 0 0;">
-          Upload a receipt → we extract only grocery items (no address/card/payment lines).
+      <header class="card section">
+        <h1 style="margin:0;">FreshScan</h1>
+        <p class="muted" style="margin:6px 0 0;">
+          Upload a receipt → scan → extract only grocery items (no address/card/total lines).
         </p>
       </header>
 
-      <section class="card" style="padding: 18px; margin-top: 14px;">
-        <h2 style="margin-top: 0;">1) Upload receipt</h2>
+      <section class="card section">
+        <h2 style="margin-top:0;">1) Upload receipt</h2>
         <input id="fileInput" type="file" accept="image/*" />
-        <p class="muted small" style="margin: 10px 0 0;">
-          Tip: clear photo, flat receipt, good lighting.
-        </p>
+        <img id="previewImg" alt="Receipt preview" />
+        <div class="muted small" style="margin-top:10px;">
+          Tip: flat receipt, good lighting, fill the frame.
+        </div>
 
-        <div style="display:flex; gap:10px; margin-top: 14px; flex-wrap: wrap;">
-          <button id="runBtn" class="btn" type="button">Scan Receipt</button>
+        <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+          <button id="runBtn" class="btn" type="button" disabled>Scan Receipt</button>
           <button id="clearBtn" class="btn" type="button">Clear</button>
         </div>
+
+        <div id="status" class="muted small" style="margin-top:10px;">Choose an image to begin.</div>
       </section>
 
-      <section class="card" style="padding: 18px; margin-top: 14px;">
-        <h2 style="margin-top: 0;">2) Extracted items</h2>
-        <div id="status" class="muted s
+      <section class="card section">
+        <h2 style="margin-top:0;">2) Extracted items</h2>
+        <div id="itemsWrap" style="margin-top:12px;"></div>
+      </section>
+
+      <section class="card section">
+        <h2 style="margin-top:0;">Debug</h2>
+        <details>
+          <summary class="muted">Show OCR text</summary>
+          <textarea id="ocrText" rows="10" placeholder="OCR text will appear here..."></textarea>
+        </details>
+      </section>
+    </main>
+
+    <script>
+      // ----------------------------
+      // Receipt parser (filters junk)
+      // ----------------------------
+      const BAD_LINE_PATTERNS = [
+        /\b(store|merchant|location|cashier|register|terminal|lane|transaction|trx|receipt|invoice)\b/i,
+        /\b(thank you|visit us|survey|customer|service|www\.|http|\.com)\b/i,
+        /\b(phone|tel|call)\b/i,
+
+        /\b(avenue|ave|street|st\.|road|rd\.|blvd|boulevard|drive|dr\.|lane|ln\.|plaza|suite|ste\.|floor)\b/i,
+        /\b(city|state|zip)\b/i,
+        /\b\d{5}(-\d{4})?\b/,
+
+        /\b(subtotal|total|tax|vat|balance|change|amount|due)\b/i,
+        /\b(cash|credit|debit|visa|mastercard|amex|discover|card)\b/i,
+        /\b(approval|auth|authorized|ref|reference|aid|tvr|tsi|arc|ic)\b/i,
+
+        /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/,
+        /\b\d{1,2}:\d{2}\b/,
+        /\b(am|pm)\b/i,
+
+        /\b(member|loyalty|points|savings|coupon|promo|discount)\b/i,
+      ];
+
+      const SENSITIVE_PATTERNS = [
+        /\b\d{12,19}\b/g,                 // possible card numbers
+        /\b(x{2,}\d{2,4})\b/gi,
+        /\b(visa|mastercard|amex|discover)\b/gi,
+      ];
+
+      function normalizeLine(line) {
+        return line.replace(/[|]/g, " ").replace(/\s+/g, " ").trim();
+      }
+      function removeSensitive(text) {
+        let t = text;
+        for (const re of SENSITIVE_PATTERNS) t = t.replace(re, "");
+        return t;
+      }
+      function looksLikeBadLine(line) {
+        if (!line) return true;
+        const letters = (line.match(/[A-Za-z]/g) || []).length;
+        const digits = (line.match(/[0-9]/g) || []).length;
+
+        if (letters === 0 && digits === 0) return true;
+        if (letters < 2 && digits > 6) return true;
+        if (/^[-=*_.]+$/.test(line)) return true;
+
+        for (const re of BAD_LINE_PATTERNS) if (re.test(line)) return true;
+        return false;
+      }
+      function extractEndPrice(line) {
+        const m = line.match(/(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}\s*$/);
+        if (!m) return { name: line, price: null };
+        const price = parseFloat(m[0].replace(/,/g, "").trim());
+        const name = line.slice(0, m.index).trim();
+        return { name, price };
+      }
+      function looksLikeItemLine(line) {
+        const letters = (line.match(/[A-Za-z]/g) || []).length;
+        if (letters < 3) return false;
+        if (/\b(tare|item count|items?)\b/i.test(line)) return false;
+        return true;
+      }
+
+      function parseReceiptItems(rawText) {
+        if (!rawText || typeof rawText !== "string") return [];
+        const cleanedText = removeSensitive(rawText);
+
+        const lines = cleanedText
+          .split(/\r?\n/)
+          .map(normalizeLine)
+          .filter(Boolean);
+
+        const candidates = [];
+
+        for (const line of lines) {
+          if (looksLikeBadLine(line)) continue;
+
+          const safeLine = removeSensitive(line).trim();
+          if (!safeLine) continue;
+
+          const chunks = safeLine.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
+
+          for (const chunk of chunks) {
+            if (looksLikeBadLine(chunk)) continue;
+            if (!looksLikeItemLine(chunk)) continue;
+
+            const { name, price } = extractEndPrice(chunk);
+            if (!name || name.length < 2) continue;
+
+            const finalName = name.replace(/\s+[A-Z]$/i, "").trim();
+            candidates.push({ name: finalName, price: Number.isFinite(price) ? price : null });
+          }
+        }
+
+        const seen = new Set();
+        const items = [];
+        for (const c of candidates) {
+          const key = c.name.toLowerCase().replace(/\s+/g, " ");
+          if (seen.has(key)) continue;
+          seen.add(key);
+          items.push(c);
+        }
+        return items;
+      }
+
+      // ----------------------------
+      // UI + OCR wiring
+      // ----------------------------
+      const fileInput = document.getElementById("fileInput");
+      const runBtn = document.getElementById("runBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const statusEl = document.getElementById("status");
+      const itemsWrap = document.getElementById("itemsWrap");
+      const ocrTextEl = document.getElementById("ocrText");
+      const previewImg = document.getElementById("previewImg");
+
+      function setStatus(msg) {
+        statusEl.textContent = msg;
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function renderItems(items) {
+        if (!items.length) {
+          itemsWrap.innerHTML = `<div class="muted">No grocery items found. Try a clearer photo.</div>`;
+          return;
+        }
+
+        itemsWrap.innerHTML = items.map(it => `
+          <div class="card" style="padding:12px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; gap:12px;">
+              <div style="font-weight:900;">${escapeHtml(it.name)}</div>
+              <div class="muted" style="font-weight:800;">
+                ${it.price != null ? `$${it.price.toFixed(2)}` : ""}
+              </div>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      async function runOCRFromFile(file) {
+        // Convert file -> dataURL so tesseract can read it reliably
+        const dataURL = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // OCR with progress updates
+        const result = await Tesseract.recognize(dataURL, "eng", {
+          logger: (m) => {
+            if (m && m.status) {
+              const pct = m.progress != null ? Math.round(m.progress * 100) : null;
+              setStatus(pct != null ? `${m.status}… ${pct}%` : `${m.status}…`);
+            }
+          },
+        });
+
+        return result?.data?.text || "";
+      }
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files?.[0];
+        runBtn.disabled = !file;
+
+        itemsWrap.innerHTML = "";
+        if (!file) {
+          previewImg.style.display = "none";
+          setStatus("Choose an image to begin.");
+          return;
+        }
+
+        // show preview
+        const url = URL.createObjectURL(file);
+        previewImg.src = url;
+        previewImg.style.display = "block";
+
+        setStatus("Ready to scan. Click “Scan Receipt”.");
+      });
+
+      runBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+
+        const file = fileInput.files?.[0];
+        if (!file) {
+          setStatus("Please choose a receipt image first.");
+          return;
+        }
+
+        runBtn.disabled = true;
+        clearBtn.disabled = true;
+        itemsWrap.innerHTML = "";
+        setStatus("Starting OCR…");
+
+        try {
+          const text = await runOCRFromFile(file);
+          ocrTextEl.value = text;
+
+          const items = parseReceiptItems(text);
+          setStatus(`Done. Found ${items.length} item(s).`);
+          renderItems(items);
+        } catch (err) {
+          console.error(err);
+          setStatus(`Error: ${err?.message || "OCR failed."}`);
+        } finally {
+          runBtn.disabled = false;
+          clearBtn.disabled = false;
+        }
+      });
+
+      clearBtn.addEventListener("click", () => {
+        fileInput.value = "";
+        itemsWrap.innerHTML = "";
+        ocrTextEl.value = "";
+        previewImg.style.display = "none";
+        runBtn.disabled = true;
+        setStatus("Cleared. Choose an image to begin.");
+      });
+    </script>
+  </body>
+</html>
