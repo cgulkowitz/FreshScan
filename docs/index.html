@@ -178,58 +178,126 @@
   }
 
   // price at END of line: "ITEM NAME 4.99"
-  function matchEndPrice(line) {
-    const m = line.match(/(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}\s*$/);
-    return m ? m[0].trim() : null;
+ // ----------------------------
+// Less-strict receipt item extraction (but still blocks store/address/payment)
+// Accepts lines with or without prices.
+// ----------------------------
+
+function matchAnyPrice(line) {
+  // captures a price anywhere, but prefers end-of-line if present
+  // examples: "MILK 4.99", "4.99 MILK", "MILK .... 4.99"
+  const end = line.match(/(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}\s*$/);
+  if (end) return { priceStr: end[0].trim(), index: end.index, atEnd: true };
+
+  const any = line.match(/(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}/);
+  if (any) return { priceStr: any[0].trim(), index: any.index, atEnd: false };
+
+  return null;
+}
+
+function isMostlyNumbersOrCodes(line) {
+  const letters = (line.match(/[A-Za-z]/g) || []).length;
+  const digits = (line.match(/[0-9]/g) || []).length;
+  // reject lines that are basically numeric codes
+  return letters < 3 && digits >= 6;
+}
+
+function looksBad(line) {
+  if (!line) return true;
+  if (/^[-=*_.]+$/.test(line)) return true;
+  if (isMostlyNumbersOrCodes(line)) return true;
+  for (const re of BAD_LINE_PATTERNS) if (re.test(line)) return true;
+  return false;
+}
+
+function looksLikeProductName(text) {
+  // Heuristics for product-y lines:
+  // - has letters
+  // - not too long (addresses tend to be long)
+  // - not clearly "TOTAL/SUBTOTAL/TAX"
+  // - does not look like "123 MAIN ST"
+  const t = text.trim();
+  const letters = (t.match(/[A-Za-z]/g) || []).length;
+  if (letters < 3) return false;
+
+  if (t.length > 42) return false; // addresses/headers often longer
+  if (/\b(total|subtotal|tax|change|cash|credit|debit)\b/i.test(t)) return false;
+
+  // line starts with street number + word (address pattern)
+  if (/^\d{1,5}\s+[A-Za-z]/.test(t)) return false;
+
+  // many receipts have weight lines we should ignore
+  if (/\b(\d+\.\d+\s?(lb|lbs|oz|kg|g))\b/i.test(t)) return false;
+
+  return true;
+}
+
+function cleanItemName(line, priceInfo) {
+  let name = line;
+
+  // remove dotted/space filler columns like "....."
+  name = name.replace(/\.{2,}/g, " ").replace(/\s{2,}/g, " ").trim();
+
+  // if price exists, remove it (either at end or anywhere)
+  if (priceInfo?.priceStr) {
+    name = name.replace(priceInfo.priceStr, "").trim();
   }
 
-  function looksBad(line) {
-    if (!line) return true;
-    if (/^[-=*_.]+$/.test(line)) return true;
-    for (const re of BAD_LINE_PATTERNS) if (re.test(line)) return true;
-    return false;
-  }
+  // remove common trailing markers/codes
+  name = name.replace(/\s+[A-Z]{1,2}$/i, "").trim(); // "F", "T", etc.
+  name = name.replace(/\b[A-Z]\d{1,3}\b/g, "").trim(); // small codes like A12
 
-  function parseReceiptItems(rawText) {
-    if (!rawText || typeof rawText !== "string") return [];
+  // if still too long after cleaning, likely not an item
+  if (name.length > 42) return "";
 
-    const text = removeSensitive(rawText);
+  return name;
+}
 
-    const lines = text.split(/\r?\n/)
-      .map(normalizeLine)
-      .filter(Boolean);
+function parseReceiptItems(rawText) {
+  if (!rawText || typeof rawText !== "string") return [];
 
-    const items = [];
-    const seen = new Set();
+  const text = removeSensitive(rawText);
 
-    for (const line of lines) {
-      if (looksBad(line)) continue;
+  const lines = text
+    .split(/\r?\n/)
+    .map(normalizeLine)
+    .filter(Boolean);
 
-      // Only accept if it has an end price (THIS is the big fix)
-      const priceStr = matchEndPrice(line);
-      if (!priceStr) continue;
+  const items = [];
+  const seen = new Set();
 
-      // Remove price from end to get name
-      const name = line.slice(0, line.length - priceStr.length).trim();
+  for (const line of lines) {
+    if (looksBad(line)) continue;
 
-      // Name sanity checks (avoid "TOTAL 12.34" etc)
-      const letters = (name.match(/[A-Za-z]/g) || []).length;
-      if (letters < 3) continue;
-      if (/\b(total|subtotal|tax)\b/i.test(name)) continue;
+    // Split OCR lines that jam multiple columns into one
+    const chunks = line.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
 
-      const price = parseFloat(priceStr.replace(/,/g, ""));
-      if (!Number.isFinite(price)) continue;
+    for (const chunk of chunks) {
+      if (looksBad(chunk)) continue;
 
-      const cleanName = name.replace(/\s{2,}/g, " ").trim();
-      const key = cleanName.toLowerCase();
+      const priceInfo = matchAnyPrice(chunk);
+      const name = cleanItemName(chunk, priceInfo);
+
+      if (!name) continue;
+      if (!looksLikeProductName(name)) continue;
+
+      // Only set price if we found one
+      let price = null;
+      if (priceInfo?.priceStr) {
+        const p = parseFloat(priceInfo.priceStr.replace(/,/g, ""));
+        if (Number.isFinite(p)) price = p;
+      }
+
+      const key = name.toLowerCase().replace(/\s+/g, " ");
       if (seen.has(key)) continue;
       seen.add(key);
 
-      items.push({ name: cleanName, price });
+      items.push({ name, price });
     }
-
-    return items;
   }
+
+  return items;
+}
 
   // ----------------------------
   // OCR
