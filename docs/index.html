@@ -66,13 +66,23 @@
     <div id="status" class="muted small" style="margin-top:10px;">Choose an image to begin.</div>
   </section>
 
-  <section class="card section">
-    <h2 style="margin-top:0;">2) Your list</h2>
-    <div class="muted small" style="margin-bottom:10px;">
-      Tip: If something is incorrectly marked, toggle “Perishable?” and the storage + date will update.
-    </div>
-    <div id="itemsWrap"></div>
-  </section>
+ <section class="card section">
+  <h2 style="margin-top:0;">2) Your list</h2>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+    <input id="manualItemName" type="text" placeholder="Add missing item (e.g., Strawberries)" style="min-width:260px;" />
+    <input id="manualItemPrice" type="text" placeholder="Price (optional, e.g., 4.99)" style="width:160px;" />
+    <button id="addItemBtn" class="btn" type="button">Add</button>
+    <span class="muted small">Add items the scan missed, then edit perishables with Toggle.</span>
+  </div>
+
+  <div class="muted small" style="margin-bottom:10px;">
+    Tip: Use <strong>X</strong> to delete wrong lines, or <strong>Cross out</strong> to strike through without deleting.
+  </div>
+
+  <div id="itemsWrap"></div>
+</section>
+
 
   <section class="card section">
     <h2 style="margin-top:0;">Debug</h2>
@@ -332,67 +342,111 @@ function parseReceiptItems(rawText) {
     return { label: `${mmddyyyy}`, weekday: `(${weekdayName(d)})` };
   }
 
-  function renderTable(rows, purchaseDate) {
-    if (!rows.length) {
-      $("itemsWrap").innerHTML = `<div class="muted">No items found. (Tip: receipts usually need clear prices visible.)</div>`;
-      return;
-    }
-
-    const html = `
-      <table>
-        <thead>
-          <tr>
-            <th style="width:34%;">Item</th>
-            <th style="width:10%;">Price</th>
-            <th style="width:14%;">Perishable?</th>
-            <th style="width:22%;">Storage</th>
-            <th style="width:20%;">Use by</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map((r, idx) => {
-            const useBy = r.perishable ? formatUseBy(purchaseDate, r.days) : { label:"—", weekday:"" };
-            return `
-              <tr>
-                <td><strong>${escapeHtml(r.name)}</strong></td>
-                <td class="muted">${r.price != null ? `$${r.price.toFixed(2)}` : ""}</td>
-                <td>
-                  <div class="rowActions">
-                    <span class="pill ${r.perishable ? "y" : "n"}">${r.perishable ? "Yes" : "No"}</span>
-                    <button class="tinyBtn" data-action="toggle" data-idx="${idx}">Toggle</button>
-                  </div>
-                </td>
-                <td>${escapeHtml(r.storage || "")}</td>
-                <td>${escapeHtml(useBy.label)} <span class="muted">${escapeHtml(useBy.weekday)}</span></td>
-              </tr>
-            `;
-          }).join("")}
-        </tbody>
-      </table>
-    `;
-
-    $("itemsWrap").innerHTML = html;
-
-    // Wire toggles
-    $("itemsWrap").querySelectorAll('button[data-action="toggle"]').forEach(btn => {
-      btn.addEventListener("click", () => {
-        const i = parseInt(btn.getAttribute("data-idx"), 10);
-        const row = window.__rows[i];
-
-        row.perishable = !row.perishable;
-        if (row.perishable) {
-          // if flipping to perishable, give a reasonable default if none
-          if (!row.days) row.days = 5;
-          if (!row.storage || row.storage === "Pantry") row.storage = "Refrigerate";
-        } else {
-          row.days = null;
-          row.storage = "Pantry";
-        }
-
-        renderTable(window.__rows, purchaseDate);
-      });
-    });
+function renderTable(rows, purchaseDate) {
+  if (!rows.length) {
+    $("itemsWrap").innerHTML = `<div class="muted">No items found. You can add items manually above.</div>`;
+    return;
   }
+
+  const html = `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30%;">Item</th>
+          <th style="width:10%;">Price</th>
+          <th style="width:16%;">Perishable?</th>
+          <th style="width:22%;">Storage</th>
+          <th style="width:16%;">Use by</th>
+          <th style="width:6%;">Fix</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((r, idx) => {
+          const useBy = r.perishable ? formatUseBy(purchaseDate, r.days) : { label:"—", weekday:"" };
+          const crossed = r.crossed ? "text-decoration: line-through; opacity: 0.6;" : "";
+          return `
+            <tr>
+              <td style="${crossed}">
+                <strong>${escapeHtml(r.name)}</strong>
+                ${r.manual ? `<div class="muted small">added manually</div>` : ``}
+              </td>
+
+              <td class="muted" style="${crossed}">
+                ${r.price != null ? `$${Number(r.price).toFixed(2)}` : ""}
+              </td>
+
+              <td>
+                <div class="rowActions">
+                  <span class="pill ${r.perishable ? "y" : "n"}">${r.perishable ? "Yes" : "No"}</span>
+                  <button class="tinyBtn" data-action="toggle" data-idx="${idx}">Toggle</button>
+                </div>
+              </td>
+
+              <td style="${crossed}">${escapeHtml(r.storage || "")}</td>
+
+              <td style="${crossed}">
+                ${escapeHtml(useBy.label)}
+                <span class="muted">${escapeHtml(useBy.weekday)}</span>
+              </td>
+
+              <td>
+                <div class="rowActions">
+                  <button class="tinyBtn" data-action="cross" data-idx="${idx}" title="Cross out">
+                    ${r.crossed ? "Uncross" : "Cross out"}
+                  </button>
+                  <button class="tinyBtn" data-action="remove" data-idx="${idx}" title="Remove">X</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+
+  $("itemsWrap").innerHTML = html;
+
+  // Toggle perishable
+  $("itemsWrap").querySelectorAll('button[data-action="toggle"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const i = parseInt(btn.getAttribute("data-idx"), 10);
+      const row = window.__rows[i];
+
+      row.perishable = !row.perishable;
+      if (row.perishable) {
+        if (!row.days) row.days = 5;
+        if (!row.storage || row.storage === "Pantry") row.storage = "Refrigerate";
+      } else {
+        row.days = null;
+        row.storage = "Pantry";
+      }
+
+      renderTable(window.__rows, purchaseDate);
+    });
+  });
+
+  // Cross out
+  $("itemsWrap").querySelectorAll('button[data-action="cross"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const i = parseInt(btn.getAttribute("data-idx"), 10);
+      window.__rows[i].crossed = !window.__rows[i].crossed;
+      renderTable(window.__rows, purchaseDate);
+    });
+  });
+
+  // Remove row
+  $("itemsWrap").querySelectorAll('button[data-action="remove"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const i = parseInt(btn.getAttribute("data-idx"), 10);
+      window.__rows.splice(i, 1);
+      renderTable(window.__rows, purchaseDate);
+    });
+  });
+}
+
+
+
+  ////
 
   // ----------------------------
   // Wire up inputs/buttons
@@ -403,6 +457,9 @@ function parseReceiptItems(rawText) {
   const previewImg = $("previewImg");
   const purchaseDateEl = $("purchaseDate");
   const ocrTextEl = $("ocrText");
+const manualItemName = $("manualItemName");
+const manualItemPrice = $("manualItemPrice");
+const addItemBtn = $("addItemBtn");
 
   // Default purchase date = today (local)
   (function setToday() {
@@ -484,6 +541,55 @@ function parseReceiptItems(rawText) {
     runBtn.disabled = true;
     setStatus("Cleared. Choose an image to begin.");
   });
+addItemBtn.addEventListener("click", () => {
+  const name = (manualItemName.value || "").trim();
+  const priceRaw = (manualItemPrice.value || "").trim();
+
+  if (!name) {
+    setStatus("Type an item name to add.");
+    return;
+  }
+
+  let price = null;
+  if (priceRaw) {
+    const p = parseFloat(priceRaw.replace("$", "").replace(/,/g, ""));
+    if (Number.isFinite(p)) price = p;
+  }
+
+  const c = classifyItem(name);
+
+  const row = {
+    name,
+    price,
+    perishable: c.perishable,
+    days: c.days,
+    storage: c.storage,
+    manual: true,
+    crossed: false
+  };
+
+  if (!window.__rows) window.__rows = [];
+  window.__rows.push(row);
+
+  // Re-render using current purchase date
+  const purchaseDate = $("purchaseDate").value
+    ? new Date($("purchaseDate").value + "T00:00:00")
+    : null;
+
+  renderTable(window.__rows, purchaseDate);
+
+  manualItemName.value = "";
+  manualItemPrice.value = "";
+  setStatus(`Added: ${name}`);
+});
+
+// Enter key adds too
+manualItemName.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addItemBtn.click();
+});
+manualItemPrice.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addItemBtn.click();
+});
 
 </script>
 </body>
