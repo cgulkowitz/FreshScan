@@ -3,593 +3,775 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FreshScan</title>
-
-  <!-- OCR -->
+  <title>FreshScan - Smart Receipt Scanner</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
-  <!-- Your pink theme MUST load last -->
-  <link rel="stylesheet" href="./styles.css" />
-
-  <!-- Safe fallback pink styles (won’t override your styles.css if it exists) -->
   <style>
-    :root{
-      --bg:#fff3f8; --panel:#fff; --text:#2b1b24; --muted:#7a4b61;
-      --pink:#ff4da6; --pink2:#ff7cc2; --border:rgba(255,77,166,.25);
-      --shadow:0 10px 30px rgba(255,77,166,.18);
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #fff3f8;
+      --panel: #fff;
+      --text: #2b1b24;
+      --muted: #7a4b61;
+      --pink: #ff4da6;
+      --pink2: #ff7cc2;
+      --border: rgba(255,77,166,.25);
+      --shadow: 0 10px 30px rgba(255,77,166,.18);
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
     }
-    html,body{background:var(--bg); color:var(--text); font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; margin:0;}
-    .container{max-width:980px; margin:24px auto; padding:0 16px;}
-    .card{background:var(--panel); border:1px solid var(--border); box-shadow:var(--shadow); border-radius:18px;}
-    .section{padding:18px; margin-top:14px;}
-    .muted{color:var(--muted);}
-    .small{font-size:13px;}
-    .btn{background:linear-gradient(90deg,var(--pink),var(--pink2)); color:#fff; border:0; border-radius:14px; padding:10px 14px; font-weight:800; cursor:pointer;}
-    .btn:disabled{opacity:.55; cursor:not-allowed;}
-    input[type="file"]{padding:10px 0;}
-    input, select {border:1px solid var(--border); border-radius:12px; padding:10px 12px; font-family:inherit; background:#fff;}
-    textarea{width:100%; border:1px solid var(--border); border-radius:12px; padding:10px 12px; font-family:inherit;}
-    #previewImg{max-width:100%; margin-top:12px; border-radius:16px; display:none; pointer-events:none;}
-    table{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border-radius:14px; border:1px solid var(--border);}
-    th,td{padding:10px 12px; text-align:left; border-bottom:1px solid var(--border); vertical-align:middle;}
-    th{background:rgba(255,77,166,.08);}
-    tr:last-child td{border-bottom:none;}
-    .pill{display:inline-block; padding:6px 10px; border-radius:999px; font-weight:800; font-size:12px; border:1px solid var(--border);}
-    .pill.y{background:rgba(255,77,166,.10);}
-    .pill.n{background:rgba(122,75,97,.08);}
-    .rowActions{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
-    .tinyBtn{padding:8px 10px; border-radius:12px; font-weight:800; border:1px solid var(--border); background:#fff; cursor:pointer;}
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius: 18px;
+      margin-bottom: 20px;
+    }
+    .section {
+      padding: 24px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      background: linear-gradient(90deg, var(--pink), var(--pink2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    h2 {
+      margin: 0 0 16px 0;
+      font-size: 20px;
+    }
+    .muted {
+      color: var(--muted);
+    }
+    .small {
+      font-size: 13px;
+    }
+    .btn {
+      background: linear-gradient(90deg, var(--pink), var(--pink2));
+      color: #fff;
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 20px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+      transition: transform 0.2s;
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: #fff;
+      color: var(--pink);
+      border: 2px solid var(--pink);
+    }
+    input[type="file"] {
+      padding: 10px 0;
+      width: 100%;
+    }
+    input[type="date"],
+    input[type="text"] {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-family: inherit;
+      background: #fff;
+      font-size: 14px;
+    }
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 13px;
+    }
+    #previewImg {
+      max-width: 100%;
+      margin-top: 12px;
+      border-radius: 16px;
+      display: none;
+      border: 2px solid var(--border);
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 16px;
+    }
+    #status {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255,77,166,.08);
+      font-size: 13px;
+    }
+    
+    /* Item List Styles */
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .item-card {
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .item-card:hover {
+      border-color: var(--pink);
+      box-shadow: 0 4px 12px rgba(255,77,166,.15);
+    }
+    .item-card.expanded {
+      border-color: var(--pink);
+    }
+    .item-card.crossed {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .item-name {
+      font-size: 16px;
+      font-weight: 700;
+      flex: 1;
+    }
+    .item-price {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--pink);
+    }
+    .item-details {
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .item-card.expanded .item-details {
+      display: block;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 14px;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .detail-value {
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .badge.perishable {
+      background: rgba(239,68,68,.1);
+      color: var(--red);
+    }
+    .badge.non-perishable {
+      background: rgba(16,185,129,.1);
+      color: var(--green);
+    }
+    .badge.expires-soon {
+      background: rgba(245,158,11,.1);
+      color: var(--yellow);
+    }
+    .item-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .small-btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .small-btn:hover {
+      background: var(--pink);
+      color: #fff;
+      border-color: var(--pink);
+    }
+    .add-item-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .add-item-form input {
+      flex: 1;
+      min-width: 200px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .chevron {
+      transition: transform 0.3s;
+      font-size: 20px;
+      color: var(--pink);
+    }
+    .item-card.expanded .chevron {
+      transform: rotate(180deg);
+    }
+    details summary {
+      cursor: pointer;
+      padding: 10px;
+      background: rgba(255,77,166,.05);
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    details[open] summary {
+      margin-bottom: 12px;
+    }
   </style>
 </head>
-
 <body>
 <main class="container">
   <header class="card section">
-    <h1 style="margin:0;">FreshScan</h1>
-    <p class="muted" style="margin:6px 0 0;">
-      Upload a receipt → scan → get a clean list of items + perishable/storage + use-by dates.
+    <h1>🍓 FreshScan</h1>
+    <p class="muted" style="margin: 8px 0 0;">
+      Upload your grocery receipt and let AI organize everything with expiration dates automatically.
     </p>
   </header>
 
   <section class="card section">
-    <h2 style="margin-top:0;">1) Upload receipt</h2>
+    <h2>📸 Upload Your Receipt</h2>
     <input id="fileInput" type="file" accept="image/*" />
     <img id="previewImg" alt="Receipt preview" />
-
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px;">
-      <label class="small muted" for="purchaseDate" style="font-weight:800;">Purchase date</label>
+    
+    <div class="controls">
+      <label style="font-weight: 600; color: var(--muted);">Purchase Date:</label>
       <input id="purchaseDate" type="date" />
-      <button id="runBtn" class="btn" type="button" disabled>Scan Receipt</button>
-      <button id="clearBtn" class="btn" type="button">Clear</button>
+      <button id="runBtn" class="btn" disabled>🔍 Scan Receipt</button>
+      <button id="clearBtn" class="btn btn-secondary">🗑️ Clear</button>
     </div>
-
-    <div id="status" class="muted small" style="margin-top:10px;">Choose an image to begin.</div>
+    
+    <div id="status">📁 Choose a receipt image to get started</div>
   </section>
 
- <section class="card section">
-  <h2 style="margin-top:0;">2) Your list</h2>
-
-  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
-    <input id="manualItemName" type="text" placeholder="Add missing item (e.g., Strawberries)" style="min-width:260px;" />
-    <input id="manualItemPrice" type="text" placeholder="Price (optional, e.g., 4.99)" style="width:160px;" />
-    <button id="addItemBtn" class="btn" type="button">Add</button>
-    <span class="muted small">Add items the scan missed, then edit perishables with Toggle.</span>
-  </div>
-
-  <div class="muted small" style="margin-bottom:10px;">
-    Tip: Use <strong>X</strong> to delete wrong lines, or <strong>Cross out</strong> to strike through without deleting.
-  </div>
-
-  <div id="itemsWrap"></div>
-</section>
-
+  <section class="card section">
+    <h2>🛒 Your Grocery Items</h2>
+    
+    <div class="add-item-form">
+      <input id="manualItemName" type="text" placeholder="Add item name (e.g., Milk, Eggs)" />
+      <input id="manualItemPrice" type="text" placeholder="Price (e.g., 4.99)" style="max-width: 150px;" />
+      <button id="addItemBtn" class="btn">➕ Add Item</button>
+    </div>
+    
+    <p class="muted small" style="margin-bottom: 16px;">
+      💡 Tip: Click any item to expand and see full details. Use buttons to toggle perishable status or remove items.
+    </p>
+    
+    <div id="itemsList" class="item-list">
+      <div class="empty-state">
+        <p style="font-size: 48px; margin: 0;">🛍️</p>
+        <p>No items yet. Scan a receipt or add items manually above.</p>
+      </div>
+    </div>
+  </section>
 
   <section class="card section">
-    <h2 style="margin-top:0;">Debug</h2>
     <details>
-      <summary class="muted">Show OCR text</summary>
+      <summary class="muted">🐛 Debug: View Raw OCR Text</summary>
       <textarea id="ocrText" rows="10" placeholder="OCR text will appear here..."></textarea>
     </details>
   </section>
 </main>
 
 <script>
-  // ----------------------------
-  // Helpers
-  // ----------------------------
-  const $ = (id) => document.getElementById(id);
+// ===========================
+// HELPER FUNCTIONS
+// ===========================
+const $ = (id) => document.getElementById(id);
 
-  function escapeHtml(str) {
-    return String(str)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function setStatus(msg) { $("status").textContent = msg; }
-
-  function weekdayName(dateObj) {
-    return dateObj.toLocaleDateString(undefined, { weekday: "long" });
-  }
-
-  function addDays(dateObj, days) {
-    const d = new Date(dateObj);
-    d.setDate(d.getDate() + days);
-    return d;
-  }
-
-  // ----------------------------
-  // Perishability rules (simple + editable)
-  // ----------------------------
-  // Default shelf-life days and storage guidance. You can add more keywords anytime.
-  const RULES = [
-    { test: /(milk|yogurt|cream|cheese|mozzarella|ricotta)/i, perishable:true, days:7, storage:"Refrigerate" },
-    { test: /(egg)/i, perishable:true, days:21, storage:"Refrigerate" },
-    { test: /(chicken|turkey|beef|pork|steak|ground|fish|salmon|tuna|shrimp)/i, perishable:true, days:2, storage:"Refrigerate (or freeze)" },
-    { test: /(lettuce|spinach|salad|greens|kale)/i, perishable:true, days:5, storage:"Refrigerate" },
-    { test: /(strawber|blueber|raspber|blackber)/i, perishable:true, days:3, storage:"Refrigerate" },
-    { test: /(apple|banana|orange|clementine|grape|pear|peach|plum|mango)/i, perishable:true, days:7, storage:"Counter (most) / Refrigerate to extend" },
-    { test: /(bread|bagel|roll|buns)/i, perishable:true, days:5, storage:"Counter (or freeze)" },
-    { test: /(pasta|rice|cereal|oats|flour|sugar)/i, perishable:false, days:null, storage:"Pantry" },
-    { test: /(soap|shampoo|detergent|towel|napkin|foil|trash|bag)/i, perishable:false, days:null, storage:"Pantry" },
-  ];
-
-  function classifyItem(name) {
-    for (const r of RULES) if (r.test.test(name)) return { ...r };
-    // Default: assume pantry/non-perishable unless user toggles
-    return { perishable:false, days:null, storage:"Pantry" };
-  }
-
-  // ----------------------------
-  // MUCH stricter receipt item extraction
-  // Strategy:
-  // 1) Remove sensitive patterns
-  // 2) Drop obvious header/address/payment lines
-  // 3) Only accept lines that have: letters + an END price (e.g. 4.99)
-  // This alone removes nearly all store name/address lines.
-  // ----------------------------
-  const SENSITIVE_PATTERNS = [
-    /\b\d{12,19}\b/g,                 // possible card numbers
-    /\b(x{2,}\d{2,4})\b/gi,
-    /\b(visa|mastercard|amex|discover)\b/gi,
-  ];
-
-  const BAD_LINE_PATTERNS = [
-    // store/header metadata
-    /\b(thank you|survey|customer|service|visit us|www\.|http|\.com)\b/i,
-    /\b(cashier|register|terminal|lane|transaction|trx|receipt|invoice)\b/i,
-
-    // address-ish
-    /\b(avenue|ave|street|st\.|road|rd\.|blvd|boulevard|drive|dr\.|lane|ln\.|suite|ste\.|plaza)\b/i,
-    /\b\d{1,5}\s+[a-z]/i,            // "123 Main"
-    /\b\d{5}(-\d{4})?\b/i,           // zip
-    /\b(phone|tel)\b/i,
-
-    // totals/payment areas
-    /\b(subtotal|total|tax|vat|balance|change|amount due)\b/i,
-    /\b(cash|credit|debit|card|approval|auth|authorized|ref|aid|tvr|tsi)\b/i,
-
-    // date/time
-    /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/,
-    /\b\d{1,2}:\d{2}\b/,
-    /\b(am|pm)\b/i,
-  ];
-
-  function normalizeLine(line) {
-    return line.replace(/[|]/g, " ").replace(/\s+/g, " ").trim();
-  }
-
-  function removeSensitive(text) {
-    let t = text;
-    for (const re of SENSITIVE_PATTERNS) t = t.replace(re, "");
-    return t;
-  }
-
-  // price at END of line: "ITEM NAME 4.99"
- // ----------------------------
-// Less-strict receipt item extraction (but still blocks store/address/payment)
-// Accepts lines with or without prices.
-// ----------------------------
-
-function matchAnyPrice(line) {
-  // captures a price anywhere, but prefers end-of-line if present
-  // examples: "MILK 4.99", "4.99 MILK", "MILK .... 4.99"
-  const end = line.match(/(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}\s*$/);
-  if (end) return { priceStr: end[0].trim(), index: end.index, atEnd: true };
-
-  const any = line.match(/(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}/);
-  if (any) return { priceStr: any[0].trim(), index: any.index, atEnd: false };
-
-  return null;
+function setStatus(msg, type = 'info') {
+  const status = $('status');
+  status.textContent = msg;
+  status.style.background = type === 'error' 
+    ? 'rgba(239,68,68,.1)' 
+    : 'rgba(255,77,166,.08)';
 }
 
-function isMostlyNumbersOrCodes(line) {
+function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+function formatDate(date) {
+  return date.toLocaleDateString('en-US', { 
+    weekday: 'short', 
+    month: 'short', 
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+function getDaysUntil(targetDate) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(targetDate);
+  target.setHours(0, 0, 0, 0);
+  const diffTime = target - today;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+// ===========================
+// PERISHABILITY RULES
+// ===========================
+const PERISHABLE_ITEMS = [
+  { match: /(milk|yogurt|cream|cheese|butter|mozzarella|ricotta|sour cream)/i, days: 7, storage: "Refrigerate" },
+  { match: /(egg|eggs)/i, days: 21, storage: "Refrigerate" },
+  { match: /(chicken|turkey|beef|pork|steak|ground|meat|fish|salmon|tuna|shrimp|seafood)/i, days: 2, storage: "Refrigerate or freeze immediately" },
+  { match: /(lettuce|spinach|salad|greens|kale|arugula)/i, days: 5, storage: "Refrigerate" },
+  { match: /(strawberr|blueberr|raspberr|blackberr|berries)/i, days: 3, storage: "Refrigerate" },
+  { match: /(apple|banana|orange|clementine|grape|pear|peach|plum|mango|avocado)/i, days: 7, storage: "Counter or refrigerate" },
+  { match: /(bread|bagel|roll|bun|tortilla)/i, days: 5, storage: "Counter or freeze" },
+  { match: /(tomato|cucumber|pepper|zucchini)/i, days: 5, storage: "Counter or refrigerate" },
+  { match: /(carrot|celery|broccoli|cauliflower)/i, days: 10, storage: "Refrigerate" },
+];
+
+function classifyItem(name) {
+  for (const item of PERISHABLE_ITEMS) {
+    if (item.match.test(name)) {
+      return {
+        perishable: true,
+        days: item.days,
+        storage: item.storage
+      };
+    }
+  }
+  return {
+    perishable: false,
+    days: null,
+    storage: "Pantry"
+  };
+}
+
+// ===========================
+// RECEIPT PARSING
+// ===========================
+const STORE_NAMES = /\b(walmart|target|kroger|safeway|albertsons|whole foods|trader joe|costco|aldi|publix|wegmans|giant|stop & shop|food lion|harris teeter|shoprite|ralphs|vons|jewel|meijer|heb|winco|sprouts|fresh market|grocery outlet)\b/i;
+
+const BAD_PATTERNS = [
+  /\b(store|market|shop|supermarket|grocery|mart|center|plaza)\b/i,
+  /\b(thank you|survey|customer|service|visit|www\.|http|\.com|save|rewards|member|points)\b/i,
+  /\b(cashier|register|terminal|lane|transaction|receipt|invoice|order)\b/i,
+  /\b(avenue|ave|street|st\.|road|rd\.|blvd|drive|dr\.|lane|ln\.|suite|ste)\b/i,
+  /\b\d{5}(-\d{4})?\b/,
+  /\b(phone|tel|fax)\b/i,
+  /\b(subtotal|total|tax|vat|balance|change|amount due|sale|discount|savings)\b/i,
+  /\b(cash|credit|debit|card|approval|auth|tender)\b/i,
+  /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/,
+  /\b\d{1,2}:\d{2}\s*(am|pm)\b/i,
+  /\b(qty|quantity|price|each|description)\b/i,
+];
+
+function isValidItemLine(line) {
+  if (!line || line.length < 3) return false;
+  if (/^[-=*_.]+$/.test(line)) return false;
+  
   const letters = (line.match(/[A-Za-z]/g) || []).length;
   const digits = (line.match(/[0-9]/g) || []).length;
-  // reject lines that are basically numeric codes
-  return letters < 3 && digits >= 6;
-}
-
-function looksBad(line) {
-  if (!line) return true;
-  if (/^[-=*_.]+$/.test(line)) return true;
-  if (isMostlyNumbersOrCodes(line)) return true;
-  for (const re of BAD_LINE_PATTERNS) if (re.test(line)) return true;
-  return false;
-}
-
-function looksLikeProductName(text) {
-  // Heuristics for product-y lines:
-  // - has letters
-  // - not too long (addresses tend to be long)
-  // - not clearly "TOTAL/SUBTOTAL/TAX"
-  // - does not look like "123 MAIN ST"
-  const t = text.trim();
-  const letters = (t.match(/[A-Za-z]/g) || []).length;
-  if (letters < 3) return false;
-
-  if (t.length > 42) return false; // addresses/headers often longer
-  if (/\b(total|subtotal|tax|change|cash|credit|debit)\b/i.test(t)) return false;
-
-  // line starts with street number + word (address pattern)
-  if (/^\d{1,5}\s+[A-Za-z]/.test(t)) return false;
-
-  // many receipts have weight lines we should ignore
-  if (/\b(\d+\.\d+\s?(lb|lbs|oz|kg|g))\b/i.test(t)) return false;
-
+  if (letters < 3 || digits > letters) return false;
+  
+  if (STORE_NAMES.test(line)) return false;
+  
+  for (const pattern of BAD_PATTERNS) {
+    if (pattern.test(line)) return false;
+  }
+  
   return true;
 }
 
-function cleanItemName(line, priceInfo) {
-  let name = line;
-
-  // remove dotted/space filler columns like "....."
-  name = name.replace(/\.{2,}/g, " ").replace(/\s{2,}/g, " ").trim();
-
-  // if price exists, remove it (either at end or anywhere)
-  if (priceInfo?.priceStr) {
-    name = name.replace(priceInfo.priceStr, "").trim();
-  }
-
-  // remove common trailing markers/codes
-  name = name.replace(/\s+[A-Z]{1,2}$/i, "").trim(); // "F", "T", etc.
-  name = name.replace(/\b[A-Z]\d{1,3}\b/g, "").trim(); // small codes like A12
-
-  // if still too long after cleaning, likely not an item
-  if (name.length > 42) return "";
-
-  return name;
+function extractPrice(line) {
+  const match = line.match(/(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}\s*$/);
+  if (!match) return null;
+  
+  const price = parseFloat(match[0].replace(/,/g, ''));
+  if (price <= 0 || price > 999) return null;
+  
+  return {
+    price: price,
+    priceStr: match[0].trim(),
+    name: line.substring(0, match.index).trim()
+  };
 }
 
-function parseReceiptItems(rawText) {
-  if (!rawText || typeof rawText !== "string") return [];
+function cleanItemName(name) {
+  return name
+    .replace(/\.{2,}/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+[A-Z]$/i, '')
+    .replace(/^[A-Z]?\d{3,}\s+/i, '')
+    .replace(/\s+[A-Z]?\d{3,}$/i, '')
+    .trim();
+}
 
-  const text = removeSensitive(rawText);
-
-  const lines = text
+function parseReceipt(ocrText) {
+  const lines = ocrText
     .split(/\r?\n/)
-    .map(normalizeLine)
+    .map(l => l.replace(/[|]/g, ' ').replace(/\s+/g, ' ').trim())
     .filter(Boolean);
-
+  
   const items = [];
   const seen = new Set();
-
+  
   for (const line of lines) {
-    if (looksBad(line)) continue;
-
-    // Split OCR lines that jam multiple columns into one
-    const chunks = line.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
-
-    for (const chunk of chunks) {
-      if (looksBad(chunk)) continue;
-
-      const priceInfo = matchAnyPrice(chunk);
-      const name = cleanItemName(chunk, priceInfo);
-
-      if (!name) continue;
-      if (!looksLikeProductName(name)) continue;
-
-      // Only set price if we found one
-      let price = null;
-      if (priceInfo?.priceStr) {
-        const p = parseFloat(priceInfo.priceStr.replace(/,/g, ""));
-        if (Number.isFinite(p)) price = p;
-      }
-
-      const key = name.toLowerCase().replace(/\s+/g, " ");
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      items.push({ name, price });
-    }
+    if (!isValidItemLine(line)) continue;
+    
+    const extracted = extractPrice(line);
+    if (!extracted) continue;
+    
+    const name = cleanItemName(extracted.name);
+    if (!name || name.length < 3 || name.length > 50) continue;
+    
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    
+    items.push({
+      name: name,
+      price: extracted.price
+    });
   }
-
+  
   return items;
 }
 
-  // ----------------------------
-  // OCR
-  // ----------------------------
-  async function runOCRFromFile(file) {
-    const dataURL = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
-    const result = await Tesseract.recognize(dataURL, "eng", {
-      logger: (m) => {
-        if (m && m.status) {
-          const pct = m.progress != null ? Math.round(m.progress * 100) : null;
-          setStatus(pct != null ? `${m.status}… ${pct}%` : `${m.status}…`);
-        }
-      },
-    });
-
-    return result?.data?.text || "";
-  }
-
-  // ----------------------------
-  // UI rendering: restores your "original list" table vibe
-  // ----------------------------
-  function formatUseBy(purchaseDate, days) {
-    if (!purchaseDate || !days) return { label: "—", weekday: "" };
-    const d = addDays(purchaseDate, days);
-    const mmddyyyy = d.toLocaleDateString();
-    return { label: `${mmddyyyy}`, weekday: `(${weekdayName(d)})` };
-  }
-
-function renderTable(rows, purchaseDate) {
-  if (!rows.length) {
-    $("itemsWrap").innerHTML = `<div class="muted">No items found. You can add items manually above.</div>`;
-    return;
-  }
-
-  const html = `
-    <table>
-      <thead>
-        <tr>
-          <th style="width:30%;">Item</th>
-          <th style="width:10%;">Price</th>
-          <th style="width:16%;">Perishable?</th>
-          <th style="width:22%;">Storage</th>
-          <th style="width:16%;">Use by</th>
-          <th style="width:6%;">Fix</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map((r, idx) => {
-          const useBy = r.perishable ? formatUseBy(purchaseDate, r.days) : { label:"—", weekday:"" };
-          const crossed = r.crossed ? "text-decoration: line-through; opacity: 0.6;" : "";
-          return `
-            <tr>
-              <td style="${crossed}">
-                <strong>${escapeHtml(r.name)}</strong>
-                ${r.manual ? `<div class="muted small">added manually</div>` : ``}
-              </td>
-
-              <td class="muted" style="${crossed}">
-                ${r.price != null ? `$${Number(r.price).toFixed(2)}` : ""}
-              </td>
-
-              <td>
-                <div class="rowActions">
-                  <span class="pill ${r.perishable ? "y" : "n"}">${r.perishable ? "Yes" : "No"}</span>
-                  <button class="tinyBtn" data-action="toggle" data-idx="${idx}">Toggle</button>
-                </div>
-              </td>
-
-              <td style="${crossed}">${escapeHtml(r.storage || "")}</td>
-
-              <td style="${crossed}">
-                ${escapeHtml(useBy.label)}
-                <span class="muted">${escapeHtml(useBy.weekday)}</span>
-              </td>
-
-              <td>
-                <div class="rowActions">
-                  <button class="tinyBtn" data-action="cross" data-idx="${idx}" title="Cross out">
-                    ${r.crossed ? "Uncross" : "Cross out"}
-                  </button>
-                  <button class="tinyBtn" data-action="remove" data-idx="${idx}" title="Remove">X</button>
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join("")}
-      </tbody>
-    </table>
-  `;
-
-  $("itemsWrap").innerHTML = html;
-
-  // Toggle perishable
-  $("itemsWrap").querySelectorAll('button[data-action="toggle"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const i = parseInt(btn.getAttribute("data-idx"), 10);
-      const row = window.__rows[i];
-
-      row.perishable = !row.perishable;
-      if (row.perishable) {
-        if (!row.days) row.days = 5;
-        if (!row.storage || row.storage === "Pantry") row.storage = "Refrigerate";
-      } else {
-        row.days = null;
-        row.storage = "Pantry";
+// ===========================
+// OCR PROCESSING
+// ===========================
+async function scanReceipt(file) {
+  const reader = new FileReader();
+  
+  return new Promise((resolve, reject) => {
+    reader.onload = async () => {
+      try {
+        const result = await Tesseract.recognize(reader.result, 'eng', {
+          logger: (m) => {
+            if (m.status) {
+              const pct = m.progress ? Math.round(m.progress * 100) : 0;
+              setStatus(`🔄 ${m.status}... ${pct}%`);
+            }
+          }
+        });
+        resolve(result.data.text);
+      } catch (err) {
+        reject(err);
       }
-
-      renderTable(window.__rows, purchaseDate);
-    });
-  });
-
-  // Cross out
-  $("itemsWrap").querySelectorAll('button[data-action="cross"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const i = parseInt(btn.getAttribute("data-idx"), 10);
-      window.__rows[i].crossed = !window.__rows[i].crossed;
-      renderTable(window.__rows, purchaseDate);
-    });
-  });
-
-  // Remove row
-  $("itemsWrap").querySelectorAll('button[data-action="remove"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const i = parseInt(btn.getAttribute("data-idx"), 10);
-      window.__rows.splice(i, 1);
-      renderTable(window.__rows, purchaseDate);
-    });
+    };
+    
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 }
 
+// ===========================
+// UI RENDERING
+// ===========================
+let allItems = [];
 
-
-  ////
-
-  // ----------------------------
-  // Wire up inputs/buttons
-  // ----------------------------
-  const fileInput = $("fileInput");
-  const runBtn = $("runBtn");
-  const clearBtn = $("clearBtn");
-  const previewImg = $("previewImg");
-  const purchaseDateEl = $("purchaseDate");
-  const ocrTextEl = $("ocrText");
-const manualItemName = $("manualItemName");
-const manualItemPrice = $("manualItemPrice");
-const addItemBtn = $("addItemBtn");
-
-  // Default purchase date = today (local)
-  (function setToday() {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    purchaseDateEl.value = `${yyyy}-${mm}-${dd}`;
-  })();
-
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files?.[0];
-    runBtn.disabled = !file;
-
-    $("itemsWrap").innerHTML = "";
-    if (!file) {
-      previewImg.style.display = "none";
-      setStatus("Choose an image to begin.");
-      return;
-    }
-
-    const url = URL.createObjectURL(file);
-    previewImg.src = url;
-    previewImg.style.display = "block";
-
-    setStatus("Ready to scan. Click “Scan Receipt”.");
-  });
-
-  runBtn.addEventListener("click", async (e) => {
-    e.preventDefault();
-
-    const file = fileInput.files?.[0];
-    if (!file) return;
-
-    runBtn.disabled = true;
-    clearBtn.disabled = true;
-    $("itemsWrap").innerHTML = "";
-    setStatus("Starting OCR…");
-
-    try {
-      const text = await runOCRFromFile(file);
-      ocrTextEl.value = text;
-
-      const rawItems = parseReceiptItems(text);
-
-      // Build “original list” rows with perishability info
-      const purchaseDate = purchaseDateEl.value ? new Date(purchaseDateEl.value + "T00:00:00") : null;
-
-      const rows = rawItems.map(it => {
-        const c = classifyItem(it.name);
-        return {
-          name: it.name,
-          price: it.price,
-          perishable: c.perishable,
-          days: c.days,
-          storage: c.storage
-        };
-      });
-
-      // Expose for toggle handler
-      window.__rows = rows;
-
-      setStatus(`Done. Found ${rows.length} item(s).`);
-      renderTable(rows, purchaseDate);
-    } catch (err) {
-      console.error(err);
-      setStatus(`Error: ${err?.message || "OCR failed."}`);
-    } finally {
-      runBtn.disabled = false;
-      clearBtn.disabled = false;
-    }
-  });
-
-  clearBtn.addEventListener("click", () => {
-    fileInput.value = "";
-    $("itemsWrap").innerHTML = "";
-    ocrTextEl.value = "";
-    previewImg.style.display = "none";
-    runBtn.disabled = true;
-    setStatus("Cleared. Choose an image to begin.");
-  });
-addItemBtn.addEventListener("click", () => {
-  const name = (manualItemName.value || "").trim();
-  const priceRaw = (manualItemPrice.value || "").trim();
-
-  if (!name) {
-    setStatus("Type an item name to add.");
+function renderItems() {
+  const container = $('itemsList');
+  
+  if (allItems.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p style="font-size: 48px; margin: 0;">🛍️</p>
+        <p>No items yet. Scan a receipt or add items manually above.</p>
+      </div>
+    `;
     return;
   }
+  
+  const purchaseDate = $('purchaseDate').value 
+    ? new Date($('purchaseDate').value + 'T00:00:00')
+    : new Date();
+  
+  container.innerHTML = allItems.map((item, idx) => {
+    const useByDate = item.perishable && item.days 
+      ? addDays(purchaseDate, item.days)
+      : null;
+    
+    const daysLeft = useByDate ? getDaysUntil(useByDate) : null;
+    
+    let expiryBadge = '';
+    if (daysLeft !== null) {
+      if (daysLeft < 0) {
+        expiryBadge = `<span class="badge perishable">Expired</span>`;
+      } else if (daysLeft <= 3) {
+        expiryBadge = `<span class="badge expires-soon">Use within ${daysLeft} day${daysLeft !== 1 ? 's' : ''}</span>`;
+      }
+    }
+    
+    return `
+      <div class="item-card ${item.crossed ? 'crossed' : ''}" data-idx="${idx}">
+        <div class="item-header" onclick="toggleItem(${idx})">
+          <div class="item-name">
+            ${item.manual ? '✏️ ' : ''}${escapeHtml(item.name)}
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${expiryBadge}
+            <div class="item-price">$${item.price.toFixed(2)}</div>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        
+        <div class="item-details">
+          <div class="detail-row">
+            <span class="detail-label">Perishable:</span>
+            <span class="detail-value">
+              <span class="badge ${item.perishable ? 'perishable' : 'non-perishable'}">
+                ${item.perishable ? 'Yes' : 'No'}
+              </span>
+            </span>
+          </div>
+          
+          <div class="detail-row">
+            <span class="detail-label">Storage:</span>
+            <span class="detail-value">${escapeHtml(item.storage)}</span>
+          </div>
+          
+          ${useByDate ? `
+            <div class="detail-row">
+              <span class="detail-label">Use By:</span>
+              <span class="detail-value" style="font-weight: 700; color: ${daysLeft <= 3 ? 'var(--red)' : 'var(--green)'};">
+                ${formatDate(useByDate)}
+                ${daysLeft !== null ? `(${daysLeft >= 0 ? daysLeft + ' days left' : 'expired'})` : ''}
+              </span>
+            </div>
+          ` : `
+            <div class="detail-row">
+              <span class="detail-label">Use By:</span>
+              <span class="detail-value">No expiration</span>
+            </div>
+          `}
+          
+          <div class="item-actions">
+            <button class="small-btn" onclick="togglePerishable(${idx})">
+              ${item.perishable ? '❄️ Mark Non-Perishable' : '🍓 Mark Perishable'}
+            </button>
+            <button class="small-btn" onclick="toggleCrossed(${idx})">
+              ${item.crossed ? '↩️ Restore' : '✓ Mark Used'}
+            </button>
+            <button class="small-btn" onclick="removeItem(${idx})" style="color: var(--red);">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 
-  let price = null;
-  if (priceRaw) {
-    const p = parseFloat(priceRaw.replace("$", "").replace(/,/g, ""));
-    if (Number.isFinite(p)) price = p;
+function toggleItem(idx) {
+  const card = document.querySelector(`[data-idx="${idx}"]`);
+  card.classList.toggle('expanded');
+}
+
+function togglePerishable(idx) {
+  allItems[idx].perishable = !allItems[idx].perishable;
+  
+  if (allItems[idx].perishable) {
+    allItems[idx].days = allItems[idx].days || 5;
+    allItems[idx].storage = allItems[idx].storage === 'Pantry' 
+      ? 'Refrigerate' 
+      : allItems[idx].storage;
+  } else {
+    allItems[idx].days = null;
+    allItems[idx].storage = 'Pantry';
   }
+  
+  renderItems();
+}
 
-  const c = classifyItem(name);
+function toggleCrossed(idx) {
+  allItems[idx].crossed = !allItems[idx].crossed;
+  renderItems();
+}
 
-  const row = {
+function removeItem(idx) {
+  if (confirm(`Remove "${allItems[idx].name}" from your list?`)) {
+    allItems.splice(idx, 1);
+    renderItems();
+    setStatus(`✓ Item removed`);
+  }
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ===========================
+// EVENT HANDLERS
+// ===========================
+const fileInput = $('fileInput');
+const runBtn = $('runBtn');
+const clearBtn = $('clearBtn');
+const previewImg = $('previewImg');
+const purchaseDateEl = $('purchaseDate');
+
+// Set today's date
+(() => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  purchaseDateEl.value = `${yyyy}-${mm}-${dd}`;
+})();
+
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files?.[0];
+  runBtn.disabled = !file;
+  
+  if (file) {
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    previewImg.style.display = 'block';
+    setStatus('✓ Receipt loaded. Click "Scan Receipt" to extract items.');
+  } else {
+    previewImg.style.display = 'none';
+    setStatus('📁 Choose a receipt image to get started');
+  }
+});
+
+runBtn.addEventListener('click', async () => {
+  const file = fileInput.files?.[0];
+  if (!file) return;
+  
+  runBtn.disabled = true;
+  clearBtn.disabled = true;
+  
+  try {
+    setStatus('🔄 Scanning receipt...');
+    const ocrText = await scanReceipt(file);
+    $('ocrText').value = ocrText;
+    
+    const items = parseReceipt(ocrText);
+    
+    const purchaseDate = purchaseDateEl.value 
+      ? new Date(purchaseDateEl.value + 'T00:00:00')
+      : new Date();
+    
+    allItems = items.map(item => {
+      const classification = classifyItem(item.name);
+      return {
+        ...item,
+        ...classification,
+        manual: false,
+        crossed: false
+      };
+    });
+    
+    renderItems();
+    setStatus(`✓ Found ${items.length} item${items.length !== 1 ? 's' : ''} on your receipt!`);
+    
+  } catch (err) {
+    console.error(err);
+    setStatus('❌ Error scanning receipt. Please try again.', 'error');
+  } finally {
+    runBtn.disabled = false;
+    clearBtn.disabled = false;
+  }
+});
+
+clearBtn.addEventListener('click', () => {
+  fileInput.value = '';
+  previewImg.style.display = 'none';
+  runBtn.disabled = true;
+  allItems = [];
+  $('ocrText').value = '';
+  renderItems();
+  setStatus('🗑️ Cleared. Ready for a new receipt.');
+});
+
+$('addItemBtn').addEventListener('click', () => {
+  const name = $('manualItemName').value.trim();
+  const priceStr = $('manualItemPrice').value.trim();
+  
+  if (!name) {
+    setStatus('❌ Please enter an item name', 'error');
+    return;
+  }
+  
+  const price = priceStr ? parseFloat(priceStr.replace('$', '')) : 0;
+  if (isNaN(price) || price < 0) {
+    setStatus('❌ Please enter a valid price', 'error');
+    return;
+  }
+  
+  const classification = classifyItem(name);
+  
+  allItems.push({
     name,
     price,
-    perishable: c.perishable,
-    days: c.days,
-    storage: c.storage,
+    ...classification,
     manual: true,
     crossed: false
-  };
-
-  if (!window.__rows) window.__rows = [];
-  window.__rows.push(row);
-
-  // Re-render using current purchase date
-  const purchaseDate = $("purchaseDate").value
-    ? new Date($("purchaseDate").value + "T00:00:00")
-    : null;
-
-  renderTable(window.__rows, purchaseDate);
-
-  manualItemName.value = "";
-  manualItemPrice.value = "";
-  setStatus(`Added: ${name}`);
+  });
+  
+  $('manualItemName').value = '';
+  $('manualItemPrice').value = '';
+  
+  renderItems();
+  setStatus(`✓ Added "${name}" to your list`);
 });
 
-// Enter key adds too
-manualItemName.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addItemBtn.click();
+$('manualItemName').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('addItemBtn').click();
 });
-manualItemPrice.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addItemBtn.click();
+
+$('manualItemPrice').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('addItemBtn').click();
 });
+
+// Re-render when purchase date changes
+purchaseDateEl.addEventListener('change', renderItems);
 
 </script>
 </body>
