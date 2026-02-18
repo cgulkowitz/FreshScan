@@ -1,492 +1,778 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Receipt → Storage & Expiration Chart</title>
-<style>
-  :root{
-    --bg:#0f0f12; --card:#17181c; --muted:#9aa0a6; --txt:#e8eaed; --accent:#8ab4f8;
-    --red:#ff6b6b; --yellow:#ffd166; --green:#06d6a0; --blue:#48cae4;
-    --border:#2a2e35;
-  }
-  *{box-sizing:border-box}
-  body{margin:0; font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; color:var(--txt); background:linear-gradient(180deg,#0b0c10,#101114 40%, #0f1116)}
-  header{padding:28px 20px 8px; text-align:center}
-  header h1{margin:0 0 6px; font-size:clamp(22px,4vw,32px); letter-spacing:.2px}
-  header p{margin:0; color:var(--muted)}
-  main{max-width:1100px; margin:18px auto 56px; padding:0 16px}
-  .controls, .output, .about{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; margin:14px 0}
-  .row{display:flex; flex-wrap:wrap; gap:12px; align-items:center}
-  .row > *{flex:1 1 220px}
-  label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
-  input[type="file"]{padding:10px; border:1px dashed var(--border); border-radius:10px; background:#101217}
-  input[type="date"], input[type="text"], select{width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:#101217; color:var(--txt)}
-  .btn{display:inline-flex; gap:8px; align-items:center; padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:#14161b; color:var(--txt); cursor:pointer; text-decoration:none; user-select:none}
-  .btn:hover{border-color:#38414a}
-  .btn.primary{background:linear-gradient(180deg,#1f2431,#19202b); border-color:#2a3645; color:#e6f0ff}
-  .btn.success{background:#113630; border-color:#1b5046}
-  .btn.warn{background:#3a2f12; border-color:#5f4a1a}
-  .btn.ghost{background:transparent}
-  .progress{height:10px; background:#0d1116; border:1px solid var(--border); border-radius:999px; overflow:hidden; margin-top:10px}
-  .progress span{display:block; height:100%; width:0%; background:linear-gradient(90deg,#6ea8fe,#65d6ff)}
-  table{width:100%; border-collapse:collapse; margin-top:8px; background:#0f1116; border-radius:10px; overflow:hidden}
-  th, td{padding:10px 10px; border-bottom:1px solid #1d2229; vertical-align:top}
-  th{position:sticky; top:0; background:#12151b; z-index:1; text-align:left; font-weight:600; color:#d7e3ff}
-  tbody tr:last-child td{border-bottom:none}
-  .pill{display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; letter-spacing:.2px}
-  .pill.red{background:color-mix(in oklab, var(--red) 30%, transparent); color:#ffd7d7; border:1px solid color-mix(in oklab, var(--red) 50%, #000 40%)}
-  .pill.yellow{background:color-mix(in oklab, var(--yellow) 25%, transparent); color:#fff2cc; border:1px solid color-mix(in oklab, var(--yellow) 45%, #000 40%)}
-  .pill.green{background:color-mix(in oklab, var(--green) 22%, transparent); color:#d7fff1; border:1px solid color-mix(in oklab, var(--green) 40%, #000 40%)}
-  .muted{color:var(--muted)}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-  .hint{font-size:12px; color:var(--muted); margin-top:6px}
-  .grid{display:grid; grid-template-columns:1fr; gap:14px}
-  @media (min-width:900px){ .grid{grid-template-columns: 1.1fr .9fr} }
-  .hidden{display:none !important}
-  .footer-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
-  .small{font-size:12px}
-  .kbd{padding:.2rem .45rem; border:1px solid var(--border); border-bottom-width:2px; border-radius:6px; background:#11141a; font:12px ui-monospace,monospace; color:#ddecff}
-  .tag{font-size:11px; padding:2px 7px; border-radius:6px; border:1px solid var(--border); color:#cfe1ff}
-  .right{float:right}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FreshScan - Smart Receipt Scanner</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #fff3f8;
+      --panel: #fff;
+      --text: #2b1b24;
+      --muted: #7a4b61;
+      --pink: #ff4da6;
+      --pink2: #ff7cc2;
+      --border: rgba(255,77,166,.25);
+      --shadow: 0 10px 30px rgba(255,77,166,.18);
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+    }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius: 18px;
+      margin-bottom: 20px;
+    }
+    .section {
+      padding: 24px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      background: linear-gradient(90deg, var(--pink), var(--pink2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    h2 {
+      margin: 0 0 16px 0;
+      font-size: 20px;
+    }
+    .muted {
+      color: var(--muted);
+    }
+    .small {
+      font-size: 13px;
+    }
+    .btn {
+      background: linear-gradient(90deg, var(--pink), var(--pink2));
+      color: #fff;
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 20px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+      transition: transform 0.2s;
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: #fff;
+      color: var(--pink);
+      border: 2px solid var(--pink);
+    }
+    input[type="file"] {
+      padding: 10px 0;
+      width: 100%;
+    }
+    input[type="date"],
+    input[type="text"] {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-family: inherit;
+      background: #fff;
+      font-size: 14px;
+    }
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 13px;
+    }
+    #previewImg {
+      max-width: 100%;
+      margin-top: 12px;
+      border-radius: 16px;
+      display: none;
+      border: 2px solid var(--border);
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 16px;
+    }
+    #status {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255,77,166,.08);
+      font-size: 13px;
+    }
+    
+    /* Item List Styles */
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .item-card {
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .item-card:hover {
+      border-color: var(--pink);
+      box-shadow: 0 4px 12px rgba(255,77,166,.15);
+    }
+    .item-card.expanded {
+      border-color: var(--pink);
+    }
+    .item-card.crossed {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .item-name {
+      font-size: 16px;
+      font-weight: 700;
+      flex: 1;
+    }
+    .item-price {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--pink);
+    }
+    .item-details {
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .item-card.expanded .item-details {
+      display: block;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 14px;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .detail-value {
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .badge.perishable {
+      background: rgba(239,68,68,.1);
+      color: var(--red);
+    }
+    .badge.non-perishable {
+      background: rgba(16,185,129,.1);
+      color: var(--green);
+    }
+    .badge.expires-soon {
+      background: rgba(245,158,11,.1);
+      color: var(--yellow);
+    }
+    .item-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .small-btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .small-btn:hover {
+      background: var(--pink);
+      color: #fff;
+      border-color: var(--pink);
+    }
+    .add-item-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .add-item-form input {
+      flex: 1;
+      min-width: 200px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .chevron {
+      transition: transform 0.3s;
+      font-size: 20px;
+      color: var(--pink);
+    }
+    .item-card.expanded .chevron {
+      transform: rotate(180deg);
+    }
+    details summary {
+      cursor: pointer;
+      padding: 10px;
+      background: rgba(255,77,166,.05);
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    details[open] summary {
+      margin-bottom: 12px;
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>Receipt → Storage & Expiration Chart</h1>
-  <p>Upload a photo of your grocery receipt. I’ll OCR it, detect the date, and build a color-coded chart with storage tips and weekday expiration.</p>
-</header>
+<main class="container">
+  <header class="card section">
+    <h1>🍓 FreshScan</h1>
+    <p class="muted" style="margin: 8px 0 0;">
+      Upload your grocery receipt and let AI organize everything with expiration dates automatically.
+    </p>
+  </header>
 
-<main>
-  <section class="controls">
-    <div class="grid">
-      <div>
-        <label>Upload receipt image (JPG/PNG)</label>
-        <input id="fileInput" type="file" accept="image/*" />
-        <div class="hint">Good lighting helps OCR. Crop to the receipt if possible.</div>
+  <section class="card section">
+    <h2>📸 Upload Your Receipt</h2>
+    <input id="fileInput" type="file" accept="image/*" />
+    <img id="previewImg" alt="Receipt preview" />
+    
+    <div class="controls">
+      <label style="font-weight: 600; color: var(--muted);">Purchase Date:</label>
+      <input id="purchaseDate" type="date" />
+      <button id="runBtn" class="btn" disabled>🔍 Scan Receipt</button>
+      <button id="clearBtn" class="btn btn-secondary">🗑️ Clear</button>
+    </div>
+    
+    <div id="status">📁 Choose a receipt image to get started</div>
+  </section>
 
-        <div id="ocrStatus" class="hint" style="margin-top:8px"></div>
-        <div class="progress hidden" id="progress"><span id="bar"></span></div>
-
-        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
-          <button class="btn primary" id="runOcrBtn">Run OCR & Build Chart</button>
-          <button class="btn ghost" id="sampleBtn" title="Uses the Eataly receipt text from your example">Use sample text</button>
-          <button class="btn" id="pasteBtn">Paste text</button>
-        </div>
-      </div>
-
-      <div>
-        <label>Detected/Chosen purchase date</label>
-        <input id="purchaseDate" type="date" />
-        <div class="hint">If I can’t find the date on the receipt, set it here.</div>
-
-        <label style="margin-top:12px">Shelf life presets (you can edit per item later)</label>
-        <select id="presetSelect">
-          <option value="default">Default guide</option>
-          <option value="conservative">Conservative (earlier)</option>
-          <option value="liberal">Liberal (later)</option>
-        </select>
-
-        <div class="hint small">Categories include: fish, cooked salads, yogurt, cucumbers, fresh herbs, onions/shallots, chocolate/dessert, and a generic fallback.</div>
+  <section class="card section">
+    <h2>🛒 Your Grocery Items</h2>
+    
+    <div class="add-item-form">
+      <input id="manualItemName" type="text" placeholder="Add item name (e.g., Milk, Eggs)" />
+      <input id="manualItemPrice" type="text" placeholder="Price (e.g., 4.99)" style="max-width: 150px;" />
+      <button id="addItemBtn" class="btn">➕ Add Item</button>
+    </div>
+    
+    <p class="muted small" style="margin-bottom: 16px;">
+      💡 Tip: Click any item to expand and see full details. Use buttons to toggle perishable status or remove items.
+    </p>
+    
+    <div id="itemsList" class="item-list">
+      <div class="empty-state">
+        <p style="font-size: 48px; margin: 0;">🛍️</p>
+        <p>No items yet. Scan a receipt or add items manually above.</p>
       </div>
     </div>
   </section>
 
-  <section class="output">
-    <div class="row" style="margin-bottom:8px">
-      <div>
-        <strong>Parsed items</strong>
-        <span class="tag" id="dateBadge"></span>
-      </div>
-      <div class="right small muted">
-        Tip: click any shelf-life to edit; the expiration & color update automatically.
-      </div>
-    </div>
-
-    <div id="tableWrap" class="hidden">
-      <table id="resultTable" aria-label="Expiration table">
-        <thead>
-          <tr>
-            <th style="width:32%">Item</th>
-            <th style="width:26%">How to store</th>
-            <th style="width:16%">Shelf life</th>
-            <th style="width:18%">Expires</th>
-            <th style="width:8%">Flag</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-
-      <div class="footer-actions">
-        <button class="btn success" id="downloadCsv">Download CSV</button>
-        <button class="btn warn" id="printBtn">Print</button>
-        <button class="btn" id="copyBtn">Copy table text</button>
-      </div>
-    </div>
-
-    <div id="emptyState" class="muted">
-      No results yet. Upload a receipt and press <strong>Run OCR</strong>, or click <strong>Use sample text</strong>.
-    </div>
-
-    <details style="margin-top:12px">
-      <summary class="small">Show raw OCR text</summary>
-      <pre id="rawText" class="mono" style="white-space:pre-wrap; background:#0c0f14; border:1px solid #1b212a; border-radius:8px; padding:10px; max-height:240px; overflow:auto"></pre>
+  <section class="card section">
+    <details>
+      <summary class="muted">🐛 Debug: View Raw OCR Text</summary>
+      <textarea id="ocrText" rows="10" placeholder="OCR text will appear here..."></textarea>
     </details>
-  </section>
-
-  <section class="about small muted">
-    <strong>Notes & assumptions</strong><br>
-    • OCR isn’t perfect — I let you edit shelf life / names inline. <br>
-    • Expiration rules are estimates. When in doubt, trust the package label or nose test. <br>
-    • Color flags: <span class="pill red">≤3 days</span>, <span class="pill yellow">4–10 days</span>, <span class="pill green">>10 days</span>. <br>
   </section>
 </main>
 
-<!-- Tesseract.js (client-side OCR) -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-/* --------------------- utilities ---------------------- */
-const $ = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
+// ===========================
+// HELPER FUNCTIONS
+// ===========================
+const $ = (id) => document.getElementById(id);
 
-function fmtDate(d){
-  const dt = new Date(d);
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth()+1).padStart(2,'0');
-  const day = String(dt.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
+function setStatus(msg, type = 'info') {
+  const status = $('status');
+  status.textContent = msg;
+  status.style.background = type === 'error' 
+    ? 'rgba(239,68,68,.1)' 
+    : 'rgba(255,77,166,.08)';
 }
-function humanDate(d){
-  const dt = new Date(d);
-  return dt.toLocaleDateString(undefined,{year:'numeric', month:'short', day:'numeric'}) +
-         " (" + dt.toLocaleDateString(undefined,{weekday:'long'}) + ")";
-}
-function addDays(base, n){
-  const d = new Date(base);
-  d.setDate(d.getDate() + n);
-  return d;
-}
-function addMonths(base, n){
-  const d = new Date(base);
-  d.setMonth(d.getMonth() + n);
-  return d;
-}
-function daysBetween(a,b){ return Math.round((b-a)/(1000*60*60*24)); }
 
-/* ------------- shelf-life knowledge base ------------- */
-const RULES = {
-  default: {
-    fish: {days:2, store:"Refrigerate & cook within 1–2 days or freeze"},
-    cooked_salad: {days:5, store:"Refrigerate in airtight container"},
-    yogurt: {days:10, store:"Refrigerate; keep sealed"},
-    cucumber: {days:7, store:"Refrigerate in crisper drawer"},
-    herb: {days:7, store:"Wrap in damp paper towel; refrigerate in bag/jar"},
-    onion_shallot: {days:30, store:"Cool, dark, ventilated place (not fridge)"},
-    chocolate: {days:21, store:"Cool, dry place; refrigerate if warm"},
-    generic: {days:7, store:"Refrigerate; check package"}
-  },
-  conservative: {
-    fish: {days:2, store:"Refrigerate & cook within 1 day or freeze"},
-    cooked_salad: {days:3, store:"Refrigerate; eat within 3 days"},
-    yogurt: {days:7, store:"Refrigerate; keep sealed"},
-    cucumber: {days:6, store:"Refrigerate in crisper drawer"},
-    herb: {days:5, store:"Wrap damp; refrigerate"},
-    onion_shallot: {days:25, store:"Cool, dark, ventilated"},
-    chocolate: {days:14, store:"Cool, dry place"},
-    generic: {days:5, store:"Refrigerate; check package"}
-  },
-  liberal: {
-    fish: {days:3, store:"Refrigerate or freeze promptly"},
-    cooked_salad: {days:6, store:"Refrigerate, airtight"},
-    yogurt: {days:12, store:"Refrigerate; keep sealed"},
-    cucumber: {days:10, store:"Refrigerate in crisper drawer"},
-    herb: {days:8, store:"Wrap damp; refrigerate"},
-    onion_shallot: {days:45, store:"Cool, dark, ventilated"},
-    chocolate: {days:30, store:"Cool, dry place"},
-    generic: {days:9, store:"Refrigerate; check package"}
-  }
-};
+function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
 
-/* keyword → category map (simple heuristics) */
-const MAP = [
-  {re:/\b(salmon|cod|tuna|halibut|fillet|fish)\b/i, cat:'fish'},
-  {re:/\b(farro.*salad|potato.*salad|winter.*salad|deli.*salad)\b/i, cat:'cooked_salad'},
-  {re:/\b(yogurt|yoghurt|greek yog|labneh|kefir)\b/i, cat:'yogurt'},
-  {re:/\b(cucumber|persian)\b/i, cat:'cucumber'},
-  {re:/\b(parsley|cilantro|basil|dill|mint|herb)\b/i, cat:'herb'},
-  {re:/\b(shallot|onion)\b/i, cat:'onion_shallot'},
-  {re:/\b(chocolate|fondente|fondentenero|dessert|truffle|candy)\b/i, cat:'chocolate'}
+function formatDate(date) {
+  return date.toLocaleDateString('en-US', { 
+    weekday: 'short', 
+    month: 'short', 
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+function getDaysUntil(targetDate) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(targetDate);
+  target.setHours(0, 0, 0, 0);
+  const diffTime = target - today;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+// ===========================
+// PERISHABILITY RULES
+// ===========================
+const PERISHABLE_ITEMS = [
+  { match: /(milk|yogurt|cream|cheese|butter|mozzarella|ricotta|sour cream)/i, days: 7, storage: "Refrigerate" },
+  { match: /(egg|eggs)/i, days: 21, storage: "Refrigerate" },
+  { match: /(chicken|turkey|beef|pork|steak|ground|meat|fish|salmon|tuna|shrimp|seafood)/i, days: 2, storage: "Refrigerate or freeze immediately" },
+  { match: /(lettuce|spinach|salad|greens|kale|arugula)/i, days: 5, storage: "Refrigerate" },
+  { match: /(strawberr|blueberr|raspberr|blackberr|berries)/i, days: 3, storage: "Refrigerate" },
+  { match: /(apple|banana|orange|clementine|grape|pear|peach|plum|mango|avocado)/i, days: 7, storage: "Counter or refrigerate" },
+  { match: /(bread|bagel|roll|bun|tortilla)/i, days: 5, storage: "Counter or freeze" },
+  { match: /(tomato|cucumber|pepper|zucchini)/i, days: 5, storage: "Counter or refrigerate" },
+  { match: /(carrot|celery|broccoli|cauliflower)/i, days: 10, storage: "Refrigerate" },
 ];
 
-function categorize(name){
-  for (const m of MAP){ if (m.re.test(name)) return m.cat; }
-  return 'generic';
-}
-
-/* -------------------- OCR handling -------------------- */
-const fileInput = $('#fileInput');
-const runBtn = $('#runOcrBtn');
-const sampleBtn = $('#sampleBtn');
-const pasteBtn = $('#pasteBtn');
-const progress = $('#progress');
-const bar = $('#bar');
-const statusEl = $('#ocrStatus');
-const tableWrap = $('#tableWrap');
-const tbody = $('#tbody');
-const emptyState = $('#emptyState');
-const rawText = $('#rawText');
-const purchaseDate = $('#purchaseDate');
-const dateBadge = $('#dateBadge');
-const presetSelect = $('#presetSelect');
-
-purchaseDate.value = fmtDate(new Date()); // default today
-
-runBtn.addEventListener('click', async ()=>{
-  let image = fileInput.files?.[0];
-  if(!image){ alert('Please choose a receipt image first (or click "Use sample text").'); return; }
-  await doOCR(image);
-});
-
-sampleBtn.addEventListener('click', ()=>{
-  const txt = SAMPLE_TEXT.trim();
-  handleParsedText(txt);
-});
-
-pasteBtn.addEventListener('click', ()=>{
-  const txt = prompt("Paste receipt text (or type items, one per line):","");
-  if(txt){ handleParsedText(txt); }
-});
-
-async function doOCR(file){
-  statusEl.textContent = 'Starting OCR…';
-  progress.classList.remove('hidden');
-  bar.style.width = '0%';
-
-  const worker = await Tesseract.createWorker('eng', 1, {
-    logger: m => {
-      if(m.status === 'recognizing text'){
-        const pct = Math.round(m.progress*100);
-        bar.style.width = pct + '%';
-        statusEl.textContent = `OCR: ${pct}%`;
-      }
+function classifyItem(name) {
+  for (const item of PERISHABLE_ITEMS) {
+    if (item.match.test(name)) {
+      return {
+        perishable: true,
+        days: item.days,
+        storage: item.storage
+      };
     }
-  });
-
-  const { data: { text } } = await worker.recognize(file);
-  await worker.terminate();
-
-  rawText.textContent = text;
-  statusEl.textContent = 'OCR complete.';
-  progress.classList.add('hidden');
-  handleParsedText(text);
+  }
+  return {
+    perishable: false,
+    days: null,
+    storage: "Pantry"
+  };
 }
 
-/* --------------- parse receipt → items ---------------- */
-function handleParsedText(text){
-  rawText.textContent = text;
+// ===========================
+// RECEIPT PARSING
+// ===========================
+const STORE_NAMES = /\b(walmart|target|kroger|safeway|albertsons|whole foods|trader joe|costco|aldi|publix|wegmans|giant|stop & shop|food lion|harris teeter|shoprite|ralphs|vons|jewel|meijer|heb|winco|sprouts|fresh market|grocery outlet)\b/i;
 
-  // Detect purchase date (US style mm/dd/yy or mm/dd/yyyy)
-  const dateMatch = text.match(/\b(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]([0-9]{2,4})\b/);
-  if(dateMatch){
-    let [mm, dd, yy] = [dateMatch[1], dateMatch[2], dateMatch[3]];
-    if(yy.length===2){ yy = '20' + yy; }
-    const detected = new Date(`${yy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}T12:00:00`);
-    if(!isNaN(detected)) purchaseDate.value = fmtDate(detected);
+const BAD_PATTERNS = [
+  /\b(store|market|shop|supermarket|grocery|mart|center|plaza)\b/i,
+  /\b(thank you|survey|customer|service|visit|www\.|http|\.com|save|rewards|member|points)\b/i,
+  /\b(cashier|register|terminal|lane|transaction|receipt|invoice|order)\b/i,
+  /\b(avenue|ave|street|st\.|road|rd\.|blvd|drive|dr\.|lane|ln\.|suite|ste)\b/i,
+  /\b\d{5}(-\d{4})?\b/,
+  /\b(phone|tel|fax)\b/i,
+  /\b(subtotal|total|tax|vat|balance|change|amount due|sale|discount|savings)\b/i,
+  /\b(cash|credit|debit|card|approval|auth|tender)\b/i,
+  /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/,
+  /\b\d{1,2}:\d{2}\s*(am|pm)\b/i,
+  /\b(qty|quantity|price|each|description)\b/i,
+];
+
+function isValidItemLine(line) {
+  if (!line || line.length < 3) return false;
+  if (/^[-=*_.]+$/.test(line)) return false;
+  
+  const letters = (line.match(/[A-Za-z]/g) || []).length;
+  const digits = (line.match(/[0-9]/g) || []).length;
+  if (letters < 3 || digits > letters) return false;
+  
+  if (STORE_NAMES.test(line)) return false;
+  
+  for (const pattern of BAD_PATTERNS) {
+    if (pattern.test(line)) return false;
   }
-  dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'});
+  
+  return true;
+}
 
-  // Split into lines and try to extract "item — price" style rows
-  const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+function extractPrice(line) {
+  const match = line.match(/(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}\s*$/);
+  if (!match) return null;
+  
+  const price = parseFloat(match[0].replace(/,/g, ''));
+  if (price <= 0 || price > 999) return null;
+  
+  return {
+    price: price,
+    priceStr: match[0].trim(),
+    name: line.substring(0, match.index).trim()
+  };
+}
 
-  // Heuristic: a line with some letters and a trailing price number
-  const priceRe = /(\$?\s?\d+(?:\.\d{2})?)$/;
-  const likely = lines.filter(l=>{
-    if(l.length<3) return false;
-    if(/receipt|total|subtotal|tax|change|clerk|store|nyc|visa|debit|credit|sales|card|information/i.test(l)) return false;
-    if(/^\d{5,}/.test(l)) return true; // UPC+item line (like your Eataly receipt)
-    if(/[A-Za-z]/.test(l) && priceRe.test(l)) return true;
-    return false;
-  });
+function cleanItemName(name) {
+  return name
+    .replace(/\.{2,}/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+[A-Z]$/i, '')
+    .replace(/^[A-Z]?\d{3,}\s+/i, '')
+    .replace(/\s+[A-Z]?\d{3,}$/i, '')
+    .trim();
+}
 
-  // Build item objects
+function parseReceipt(ocrText) {
+  const lines = ocrText
+    .split(/\r?\n/)
+    .map(l => l.replace(/[|]/g, ' ').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  
   const items = [];
-  for(const ln of likely){
-    // If UPC + name + price (e.g., "852210005159 WHITE MOUSTACHE SUMMER PEACH 8OZ 6.79")
-    let name = ln;
-    // Remove leading long code(s)
-    name = name.replace(/^[\d\s]{6,}\s+/,'');
-    // Remove quantity/weight fragments like "0.200 lb @ $3.99/lb 0.80"
-    name = name.replace(/\b\d+(?:\.\d+)?\s*(lb|oz|@|\$|pkg|ea|ct|x|lb\.?)\b.*$/i, m=>{
-      // keep name before the weight/price cluster if there's an earlier word run
-      return '';
-    }).trim() || ln.replace(/^\d+\s+/,'');
-    // If we removed too much, fallback to original (minus trailing price)
-    if(name.length < 3){
-      name = ln.replace(priceRe,'').trim();
-    }
-
-    // Extract trailing price if present (not used, but handy)
-    const pm = ln.match(priceRe);
-    const price = pm ? pm[1].replace('$','').trim() : '';
-
-    // sanitize name
-    name = name.replace(/\s{2,}/g,' ').replace(/\bEA\b/i,'').trim();
-    // Prevent obvious non-item rows
-    if(/^\$/.test(name) || /TOTAL|SUBTOTAL|TAX/i.test(name)) continue;
-
-    items.push({raw: ln, name, price});
-  }
-
-  // Deduplicate by name (simple)
   const seen = new Set();
-  const dedup = items.filter(x=>{
-    const key = x.name.toLowerCase();
-    if(seen.has(key)) return false;
-    seen.add(key); return true;
+  
+  for (const line of lines) {
+    if (!isValidItemLine(line)) continue;
+    
+    const extracted = extractPrice(line);
+    if (!extracted) continue;
+    
+    const name = cleanItemName(extracted.name);
+    if (!name || name.length < 3 || name.length > 50) continue;
+    
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    
+    items.push({
+      name: name,
+      price: extracted.price
+    });
+  }
+  
+  return items;
+}
+
+// ===========================
+// OCR PROCESSING
+// ===========================
+async function scanReceipt(file) {
+  const reader = new FileReader();
+  
+  return new Promise((resolve, reject) => {
+    reader.onload = async () => {
+      try {
+        const result = await Tesseract.recognize(reader.result, 'eng', {
+          logger: (m) => {
+            if (m.status) {
+              const pct = m.progress ? Math.round(m.progress * 100) : 0;
+              setStatus(`🔄 ${m.status}... ${pct}%`);
+            }
+          }
+        });
+        resolve(result.data.text);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
-
-  buildTable(dedup);
 }
 
-/* -------------- build interactive table --------------- */
-function shelfLifeFor(name){
-  const preset = RULES[presetSelect.value] || RULES.default;
-  const cat = categorize(name);
-  const rule = preset[cat] || preset.generic;
-  return {cat, ...rule};
-}
+// ===========================
+// UI RENDERING
+// ===========================
+let allItems = [];
 
-function colorFlag(days){
-  if(days <= 3) return {cls:'red', label:'Use ASAP'};
-  if(days <= 10) return {cls:'yellow', label:'Use Soon'};
-  return {cls:'green', label:'Lasts a while'};
-}
-
-function buildTable(items){
-  tbody.innerHTML = '';
-  const base = new Date(purchaseDate.value);
-
-  if(!items.length){
-    tableWrap.classList.add('hidden');
-    emptyState.classList.remove('hidden');
+function renderItems() {
+  const container = $('itemsList');
+  
+  if (allItems.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p style="font-size: 48px; margin: 0;">🛍️</p>
+        <p>No items yet. Scan a receipt or add items manually above.</p>
+      </div>
+    `;
     return;
   }
-
-  for(const it of items){
-    const rule = shelfLifeFor(it.name);
-    const tr = document.createElement('tr');
-
-    // Compute expiry
-    let expires;
-    if(rule.months){ expires = addMonths(base, rule.months); }
-    else { expires = addDays(base, rule.days); }
-
-    const days = daysBetween(base, expires);
-    const flag = colorFlag(days);
-
-    tr.innerHTML = `
-      <td><div style="font-weight:600">${escapeHtml(titleCase(it.name))}</div>
-          <div class="muted mono small">${escapeHtml(it.raw)}</div></td>
-      <td>${escapeHtml(rule.store)}</td>
-      <td>
-        <input class="lifeInput" type="text" value="${rule.days ?? (rule.months*30)} days" 
-               style="width:120px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:#0f1217; color:var(--txt)">
-        <div class="hint small">edit (e.g. “5 days” or “2 months”)</div>
-      </td>
-      <td class="expiresCell"><strong>${escapeHtml(humanDate(expires))}</strong></td>
-      <td class="flagCell"><span class="pill ${flag.cls}">${flag.label}</span></td>
-    `;
-    tbody.appendChild(tr);
-  }
-
-  tableWrap.classList.remove('hidden');
-  emptyState.classList.add('hidden');
-  dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'});
-
-  // attach editors
-  $$('#resultTable .lifeInput').forEach((inp, idx)=>{
-    inp.addEventListener('change', ()=>{
-      const val = inp.value.trim().toLowerCase();
-      let nDays = 7;
-      const m = val.match(/(\d+(?:\.\d+)?)\s*(day|days|d|month|months|mo)/);
-      if(m){
-        const num = parseFloat(m[1]);
-        const unit = m[2];
-        nDays = /mo|month/.test(unit) ? Math.round(num*30) : Math.round(num);
+  
+  const purchaseDate = $('purchaseDate').value 
+    ? new Date($('purchaseDate').value + 'T00:00:00')
+    : new Date();
+  
+  container.innerHTML = allItems.map((item, idx) => {
+    const useByDate = item.perishable && item.days 
+      ? addDays(purchaseDate, item.days)
+      : null;
+    
+    const daysLeft = useByDate ? getDaysUntil(useByDate) : null;
+    
+    let expiryBadge = '';
+    if (daysLeft !== null) {
+      if (daysLeft < 0) {
+        expiryBadge = `<span class="badge perishable">Expired</span>`;
+      } else if (daysLeft <= 3) {
+        expiryBadge = `<span class="badge expires-soon">Use within ${daysLeft} day${daysLeft !== 1 ? 's' : ''}</span>`;
       }
-      const base = new Date(purchaseDate.value);
-      const newExp = addDays(base, nDays);
-
-      const row = inp.closest('tr');
-      row.querySelector('.expiresCell').innerHTML = `<strong>${escapeHtml(humanDate(newExp))}</strong>`;
-      const flag = colorFlag(nDays);
-      const flagCell = row.querySelector('.flagCell');
-      flagCell.innerHTML = `<span class="pill ${flag.cls}">${flag.label}</span>`;
-    });
-  });
+    }
+    
+    return `
+      <div class="item-card ${item.crossed ? 'crossed' : ''}" data-idx="${idx}">
+        <div class="item-header" onclick="toggleItem(${idx})">
+          <div class="item-name">
+            ${item.manual ? '✏️ ' : ''}${escapeHtml(item.name)}
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${expiryBadge}
+            <div class="item-price">$${item.price.toFixed(2)}</div>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        
+        <div class="item-details">
+          <div class="detail-row">
+            <span class="detail-label">Perishable:</span>
+            <span class="detail-value">
+              <span class="badge ${item.perishable ? 'perishable' : 'non-perishable'}">
+                ${item.perishable ? 'Yes' : 'No'}
+              </span>
+            </span>
+          </div>
+          
+          <div class="detail-row">
+            <span class="detail-label">Storage:</span>
+            <span class="detail-value">${escapeHtml(item.storage)}</span>
+          </div>
+          
+          ${useByDate ? `
+            <div class="detail-row">
+              <span class="detail-label">Use By:</span>
+              <span class="detail-value" style="font-weight: 700; color: ${daysLeft <= 3 ? 'var(--red)' : 'var(--green)'};">
+                ${formatDate(useByDate)}
+                ${daysLeft !== null ? `(${daysLeft >= 0 ? daysLeft + ' days left' : 'expired'})` : ''}
+              </span>
+            </div>
+          ` : `
+            <div class="detail-row">
+              <span class="detail-label">Use By:</span>
+              <span class="detail-value">No expiration</span>
+            </div>
+          `}
+          
+          <div class="item-actions">
+            <button class="small-btn" onclick="togglePerishable(${idx})">
+              ${item.perishable ? '❄️ Mark Non-Perishable' : '🍓 Mark Perishable'}
+            </button>
+            <button class="small-btn" onclick="toggleCrossed(${idx})">
+              ${item.crossed ? '↩️ Restore' : '✓ Mark Used'}
+            </button>
+            <button class="small-btn" onclick="removeItem(${idx})" style="color: var(--red);">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
-/* --------------------- actions ------------------------ */
-$('#downloadCsv').addEventListener('click', ()=>{
-  const rows = [['Item','How to store','Shelf life','Expires','Flag']];
-  $$('#resultTable tbody tr').forEach(tr=>{
-    const tds = tr.querySelectorAll('td');
-    rows.push([
-      tds[0].firstElementChild.textContent.trim(),
-      tds[1].textContent.trim(),
-      tds[2].querySelector('input').value.trim(),
-      tds[3].textContent.trim(),
-      tds[4].textContent.trim()
-    ]);
-  });
-  const csv = rows.map(r=>r.map(s=>`"${s.replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement('a'), {href:url, download:`receipt-expirations-${fmtDate(new Date())}.csv`});
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-});
-$('#printBtn').addEventListener('click', ()=> window.print());
-$('#copyBtn').addEventListener('click', ()=>{
-  const lines = [];
-  $$('#resultTable tbody tr').forEach(tr=>{
-    const [item, store, life, exp, flag] = tr.querySelectorAll('td');
-    lines.push(`${item.firstElementChild.textContent} — ${store.textContent} — ${life.querySelector('input').value} — ${exp.textContent} — ${flag.textContent}`);
-  });
-  navigator.clipboard.writeText(lines.join('\n'));
-  alert('Table copied to clipboard.');
-});
-purchaseDate.addEventListener('change', ()=>{
-  // recompute expirations for all rows
-  $$('#resultTable tbody tr').forEach(tr=>{
-    const inp = tr.querySelector('.lifeInput');
-    inp.dispatchEvent(new Event('change'));
-  });
-  dateBadge.textContent = "Purchase: " + new Date(purchaseDate.value).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric', year:'numeric'});
+function toggleItem(idx) {
+  const card = document.querySelector(`[data-idx="${idx}"]`);
+  card.classList.toggle('expanded');
+}
+
+function togglePerishable(idx) {
+  allItems[idx].perishable = !allItems[idx].perishable;
+  
+  if (allItems[idx].perishable) {
+    allItems[idx].days = allItems[idx].days || 5;
+    allItems[idx].storage = allItems[idx].storage === 'Pantry' 
+      ? 'Refrigerate' 
+      : allItems[idx].storage;
+  } else {
+    allItems[idx].days = null;
+    allItems[idx].storage = 'Pantry';
+  }
+  
+  renderItems();
+}
+
+function toggleCrossed(idx) {
+  allItems[idx].crossed = !allItems[idx].crossed;
+  renderItems();
+}
+
+function removeItem(idx) {
+  if (confirm(`Remove "${allItems[idx].name}" from your list?`)) {
+    allItems.splice(idx, 1);
+    renderItems();
+    setStatus(`✓ Item removed`);
+  }
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ===========================
+// EVENT HANDLERS
+// ===========================
+const fileInput = $('fileInput');
+const runBtn = $('runBtn');
+const clearBtn = $('clearBtn');
+const previewImg = $('previewImg');
+const purchaseDateEl = $('purchaseDate');
+
+// Set today's date
+(() => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  purchaseDateEl.value = `${yyyy}-${mm}-${dd}`;
+})();
+
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files?.[0];
+  runBtn.disabled = !file;
+  
+  if (file) {
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    previewImg.style.display = 'block';
+    setStatus('✓ Receipt loaded. Click "Scan Receipt" to extract items.');
+  } else {
+    previewImg.style.display = 'none';
+    setStatus('📁 Choose a receipt image to get started');
+  }
 });
 
-/* ---------------- sample (your Eataly) ---------------- */
-const SAMPLE_TEXT = `
-EATALY
-200 5th Ave. New York City, NY 10010
-10/28/25 5:45 PM
-Clerk: Cyrus Kisitu
-852210005159 WHITE MOUSTACHE SUMMER PEACH 8OZ 6.79
-852210005012 WHITE MOUSTACHE GREEK YOG 8 OZ 6.79
-34047 ORGANIC SALMON FILLET 0.15
-0.005 lb @ $29.99/lb
-2063012 FARRO WINTER SALAD 14.99NYT
-8006380230039 MINI FONDENTENERO 16 13.99NYT
-05783690001 CUCUMBER PERSIAN ORGANIC 12X1LB 4.99
-10634 ONION SHALLOT 0.200 lb @ $3.99/lb 0.80
-10397 HERB PARSLEY ITALIAN FRESH 1.99
-SUBTOTAL 50.49
-NYC SALES TAX 8.875% 2.57
-TOTAL 53.06
-`;
+runBtn.addEventListener('click', async () => {
+  const file = fileInput.files?.[0];
+  if (!file) return;
+  
+  runBtn.disabled = true;
+  clearBtn.disabled = true;
+  
+  try {
+    setStatus('🔄 Scanning receipt...');
+    const ocrText = await scanReceipt(file);
+    $('ocrText').value = ocrText;
+    
+    const items = parseReceipt(ocrText);
+    
+    const purchaseDate = purchaseDateEl.value 
+      ? new Date(purchaseDateEl.value + 'T00:00:00')
+      : new Date();
+    
+    allItems = items.map(item => {
+      const classification = classifyItem(item.name);
+      return {
+        ...item,
+        ...classification,
+        manual: false,
+        crossed: false
+      };
+    });
+    
+    renderItems();
+    setStatus(`✓ Found ${items.length} item${items.length !== 1 ? 's' : ''} on your receipt!`);
+    
+  } catch (err) {
+    console.error(err);
+    setStatus('❌ Error scanning receipt. Please try again.', 'error');
+  } finally {
+    runBtn.disabled = false;
+    clearBtn.disabled = false;
+  }
+});
 
-/* ------------------- helpers -------------------------- */
-function titleCase(s){ return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
-function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+clearBtn.addEventListener('click', () => {
+  fileInput.value = '';
+  previewImg.style.display = 'none';
+  runBtn.disabled = true;
+  allItems = [];
+  $('ocrText').value = '';
+  renderItems();
+  setStatus('🗑️ Cleared. Ready for a new receipt.');
+});
+
+$('addItemBtn').addEventListener('click', () => {
+  const name = $('manualItemName').value.trim();
+  const priceStr = $('manualItemPrice').value.trim();
+  
+  if (!name) {
+    setStatus('❌ Please enter an item name', 'error');
+    return;
+  }
+  
+  const price = priceStr ? parseFloat(priceStr.replace('$', '')) : 0;
+  if (isNaN(price) || price < 0) {
+    setStatus('❌ Please enter a valid price', 'error');
+    return;
+  }
+  
+  const classification = classifyItem(name);
+  
+  allItems.push({
+    name,
+    price,
+    ...classification,
+    manual: true,
+    crossed: false
+  });
+  
+  $('manualItemName').value = '';
+  $('manualItemPrice').value = '';
+  
+  renderItems();
+  setStatus(`✓ Added "${name}" to your list`);
+});
+
+$('manualItemName').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('addItemBtn').click();
+});
+
+$('manualItemPrice').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('addItemBtn').click();
+});
+
+// Re-render when purchase date changes
+purchaseDateEl.addEventListener('change', renderItems);
+
 </script>
 </body>
 </html>
