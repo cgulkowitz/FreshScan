@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git diff-tree:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(shopt:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"$f\")",
+      "Bash(done)",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''C:\\\\Users\\\\AronsonD\\\\Documents\\\\GitHUb\\\\FreshScan'' -Force | Select-Object Name, PSIsContainer\")"
+    ]
+  }
+}
