@@ -442,7 +442,7 @@ function cleanItemName(name) {
     .replace(/\.{2,}/g, ' ')
     .replace(/\s{2,}/g, ' ')
     .replace(/\s+[A-Z]$/i, '')
-    .replace(/^[A-Z]?\d{3,}\s+/i, '')
+    .replace(/^\d{6,}\s+/, '')
     .replace(/\s+[A-Z]?\d{3,}$/i, '')
     .trim();
 }
@@ -450,7 +450,7 @@ function cleanItemName(name) {
 function parseReceipt(ocrText) {
   const lines = ocrText
     .split(/\r?\n/)
-    .map(l => l.replace(/[|]/g, ' ').replace(/\s+/g, ' ').trim())
+    .map(l => l.replace(/[|]/g, 'I').replace(/\s+/g, ' ').trim())
     .filter(Boolean);
   
   const items = [];
@@ -481,29 +481,55 @@ function parseReceipt(ocrText) {
 // ===========================
 // OCR PROCESSING
 // ===========================
-async function scanReceipt(file) {
-  const reader = new FileReader();
-  
-  return new Promise((resolve, reject) => {
-    reader.onload = async () => {
-      try {
-        const result = await Tesseract.recognize(reader.result, 'eng', {
-          logger: (m) => {
-            if (m.status) {
-              const pct = m.progress ? Math.round(m.progress * 100) : 0;
-              setStatus(`🔄 ${m.status}... ${pct}%`);
-            }
-          }
-        });
-        resolve(result.data.text);
-      } catch (err) {
-        reject(err);
+async function preprocessImage(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const maxDim = Math.max(img.width, img.height);
+      const scale = maxDim < 1800 ? Math.min(3, 1800 / maxDim) : 1;
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+        const v = Math.max(0, Math.min(255, (gray - 128) * 1.5 + 128));
+        d[i] = d[i+1] = d[i+2] = v;
       }
+      ctx.putImageData(id, 0, 0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(resolve, 'image/png');
     };
-    
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
   });
+}
+
+async function scanReceipt(file) {
+  setStatus('🔄 Preprocessing image...');
+  const processedBlob = await preprocessImage(file);
+
+  const worker = await Tesseract.createWorker('eng', 1, {
+    logger: (m) => {
+      if (m.status) {
+        const pct = m.progress ? Math.round(m.progress * 100) : 0;
+        setStatus(`🔄 ${m.status}... ${pct}%`);
+      }
+    }
+  });
+
+  await worker.setParameters({
+    tessedit_pageseg_mode: '4',
+    preserve_interword_spaces: '1',
+  });
+
+  const { data: { text } } = await worker.recognize(processedBlob);
+  await worker.terminate();
+  return text;
 }
 
 // ===========================

@@ -7,7 +7,8 @@
       "Bash(for:*)",
       "Bash(do echo \"$f\")",
       "Bash(done)",
-      "Bash(powershell -Command \"Get-ChildItem -Path ''C:\\\\Users\\\\AronsonD\\\\Documents\\\\GitHUb\\\\FreshScan'' -Force | Select-Object Name, PSIsContainer\")"
+      "Bash(powershell -Command \"Get-ChildItem -Path ''C:\\\\Users\\\\AronsonD\\\\Documents\\\\GitHUb\\\\FreshScan'' -Force | Select-Object Name, PSIsContainer\")",
+      "Bash(git -C \"C:/Users/AronsonD/Documents/GitHUb/FreshScan\" status)"
     ]
   }
 }
