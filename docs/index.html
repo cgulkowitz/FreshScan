@@ -652,7 +652,9 @@ function renderItems() {
           </div>
           <div style="display: flex; align-items: center; gap: 12px;">
             ${expiryBadge}
-            <div class="item-price">$${item.price.toFixed(2)}</div>
+            <span class="badge ${item.perishable ? 'perishable' : 'non-perishable'}">
+              ${item.perishable ? 'Yes' : 'No'}
+            </span>
             <span class="chevron">▼</span>
           </div>
         </div>
@@ -687,6 +689,11 @@ function renderItems() {
             </div>
           `}
           
+          <div class="detail-row">
+            <span class="detail-label">Price:</span>
+            <span class="detail-value">$${item.price.toFixed(2)}</span>
+          </div>
+
           <div class="item-actions">
             <button class="small-btn" onclick="togglePerishable(${idx})">
               ${item.perishable ? '❄️ Mark Non-Perishable' : '🍓 Mark Perishable'}
