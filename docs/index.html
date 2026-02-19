@@ -364,7 +364,7 @@ const PERISHABLE_ITEMS = [
   { match: /(chicken|turkey|beef|pork|steak|ground|meat|fish|salmon|tuna|shrimp|seafood)/i, days: 2, storage: "Refrigerate or freeze immediately" },
   { match: /(lettuce|spinach|salad|greens|kale|arugula)/i, days: 5, storage: "Refrigerate" },
   { match: /(strawberr|blueberr|raspberr|blackberr|berries)/i, days: 3, storage: "Refrigerate" },
-  { match: /(apple|banana|orange|clementine|grape|pear|peach|plum|mango|avocado)/i, days: 7, storage: "Counter or refrigerate" },
+  { match: /(apple|banana|orange|clementine|grape|pear|peach|plum|mango|avocado)/i, days: 7, storage: "Pantry" },
   { match: /(bread|bagel|roll|bun|tortilla)/i, days: 5, storage: "Counter or freeze" },
   { match: /(tomato|cucumber|pepper|zucchini)/i, days: 5, storage: "Counter or refrigerate" },
   { match: /(carrot|celery|broccoli|cauliflower)/i, days: 10, storage: "Refrigerate" },
@@ -424,16 +424,16 @@ function isValidItemLine(line) {
 }
 
 function extractPrice(line) {
-  const match = line.match(/(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}\s*$/);
+  // Allow optional $ prefix and trailing 1-2 letter tax flag (F, N, T, FT, etc.)
+  const match = line.match(/\$?(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}(?:\s+\S{1,2})?\s*$/);
   if (!match) return null;
-  
-  const price = parseFloat(match[0].replace(/,/g, ''));
+  const numStr = match[0].match(/[\d,]+\.\d{2}/)[0];
+  const price = parseFloat(numStr.replace(/,/g, ''));
   if (price <= 0 || price > 999) return null;
-  
   return {
-    price: price,
-    priceStr: match[0].trim(),
-    name: line.substring(0, match.index).trim()
+    price,
+    priceStr: numStr,
+    name: line.substring(0, match.index).replace(/\s*\$$/, '').trim()
   };
 }
 
@@ -450,31 +450,80 @@ function cleanItemName(name) {
 function parseReceipt(ocrText) {
   const lines = ocrText
     .split(/\r?\n/)
-    .map(l => l.replace(/[|]/g, 'I').replace(/\s+/g, ' ').trim())
+    .map(l => l.replace(/[|]/g, 'I').replace(/(\d),(\d{2})(?!\d)/g, '$1.$2').replace(/\s+/g, ' ').trim())
     .filter(Boolean);
-  
-  const items = [];
-  const seen = new Set();
-  
-  for (const line of lines) {
-    if (!isValidItemLine(line)) continue;
-    
-    const extracted = extractPrice(line);
-    if (!extracted) continue;
-    
-    const name = cleanItemName(extracted.name);
-    if (!name || name.length < 3 || name.length > 50) continue;
-    
-    const key = name.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    
-    items.push({
-      name: name,
-      price: extracted.price
-    });
+
+  // Lines matching these are financial summaries, never grocery items
+  const SKIP_LINE = /\b(subtotal|sub.?total|total|tax|vat|net sales|change|balance|paid|tender|carry out|bag fee|bag charge|sold items|approval|auth code|chip card|debit|credit|cash|visa|mastercard|amex|discover|earn|points|rewards|returns|refund)\b/i;
+
+  // Content that marks a price-annotation line rather than an item name
+  const JUNK_NAME = /\b(savings|reg|regular|qty|quantity|each|per lb|per oz)\b|^\s*\(/i;
+
+  function isGoodName(n) {
+    if (!n || n.length < 3 || n.length > 60) return false;
+    if (!/[A-Za-z]{2,}/.test(n)) return false;
+    const letters = (n.match(/[A-Za-z]/g) || []).length;
+    const digits  = (n.match(/[0-9]/g)    || []).length;
+    if (digits > letters) return false;
+    return !SKIP_LINE.test(n) && !JUNK_NAME.test(n);
   }
-  
+
+  const items = [];
+  const seen  = new Set();
+
+  function addItem(name, price) {
+    const key = name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    items.push({ name, price });
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const extracted = extractPrice(line);
+
+    if (extracted) {
+      // ── Case A: line carries a price ──
+      if (SKIP_LINE.test(line)) continue;
+      const name = cleanItemName(extracted.name);
+      if (isGoodName(name)) {
+        addItem(name, extracted.price);
+      }
+      // If name is junk, the price was already consumed by a preceding Case B forward-scan
+
+    } else {
+      // ── Case B: name-only line — scan forward up to 3 lines for its price ──
+      if (SKIP_LINE.test(line) || STORE_NAMES.test(line)) continue;
+      const name = cleanItemName(line);
+      if (!isGoodName(name)) continue;
+
+      // Take the LAST valid price in the window so sale items use the discounted price
+      // (the "Savings with Prime $3.00 F" line comes after the "Reg $4.79" line)
+      let bestPrice    = null;
+      let bestConsumed = 0;
+      for (let j = 1; j <= 3 && i + j < lines.length; j++) {
+        const fwd   = lines[i + j];
+        const fwdEx = extractPrice(fwd);
+        if (fwdEx) {
+          if (SKIP_LINE.test(fwd)) continue;
+          const fwdName = cleanItemName(fwdEx.name);
+          if (isGoodName(fwdName)) break; // next line is its own self-contained item
+          bestPrice    = fwdEx.price;
+          bestConsumed = j;
+        } else {
+          // Non-price line: stop if it looks like a new item name
+          const c = cleanItemName(fwd);
+          if (isGoodName(c) && !JUNK_NAME.test(fwd)) break;
+        }
+      }
+
+      if (bestPrice !== null) {
+        addItem(name, bestPrice);
+        i += bestConsumed; // skip the detail lines we just consumed
+      }
+    }
+  }
+
   return items;
 }
 
@@ -487,7 +536,7 @@ async function preprocessImage(file) {
     const url = URL.createObjectURL(file);
     img.onload = () => {
       const maxDim = Math.max(img.width, img.height);
-      const scale = maxDim < 1800 ? Math.min(3, 1800 / maxDim) : 1;
+      const scale = maxDim < 2400 ? Math.min(4, 2400 / maxDim) : 1;
       const canvas = document.createElement('canvas');
       canvas.width  = Math.round(img.width  * scale);
       canvas.height = Math.round(img.height * scale);
@@ -495,11 +544,35 @@ async function preprocessImage(file) {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const d = id.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-        const v = Math.max(0, Math.min(255, (gray - 128) * 1.5 + 128));
-        d[i] = d[i+1] = d[i+2] = v;
+      const n = canvas.width * canvas.height;
+
+      // Convert to grayscale and build histogram
+      const gray = new Uint8Array(n);
+      const hist = new Int32Array(256);
+      for (let i = 0, p = 0; i < n; i++, p += 4) {
+        const g = Math.round(0.299 * d[p] + 0.587 * d[p+1] + 0.114 * d[p+2]);
+        gray[i] = g;
+        hist[g]++;
       }
+
+      // Percentile stretch: map the 1st–99th percentile of this image's
+      // actual brightness range to 0–255. This handles over/underexposed
+      // photos and uneven lighting without a hard binarisation threshold.
+      // Tesseract applies its own well-tuned internal binarisation on the
+      // resulting normalised grayscale image.
+      let lo = 0, hi = 255, cumSum = 0;
+      for (let i = 0; i < 256; i++) {
+        cumSum += hist[i];
+        if (cumSum <= n * 0.01) lo = i;
+        if (cumSum <= n * 0.99) hi = i;
+      }
+      const range = Math.max(hi - lo, 1);
+
+      for (let i = 0, p = 0; i < n; i++, p += 4) {
+        const v = Math.max(0, Math.min(255, Math.round((gray[i] - lo) * 255 / range)));
+        d[p] = d[p+1] = d[p+2] = v;
+      }
+
       ctx.putImageData(id, 0, 0);
       URL.revokeObjectURL(url);
       canvas.toBlob(resolve, 'image/png');
