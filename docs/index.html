@@ -359,15 +359,16 @@ function getDaysUntil(targetDate) {
 // PERISHABILITY RULES
 // ===========================
 const PERISHABLE_ITEMS = [
-  { match: /(milk|yogurt|cream|cheese|butter|mozzarella|ricotta|sour cream)/i, days: 7, storage: "Refrigerate" },
+  { match: /(milk|yogurt|\byg\b|ygrt|cream|cheese|butter|mozzarella|ricotta|sour cream|feta|cheddar|parmesan|gouda|brie|colby|provolone|gruyere)/i, days: 7, storage: "Refrigerate" },
   { match: /(egg|eggs)/i, days: 21, storage: "Refrigerate" },
-  { match: /(chicken|turkey|beef|pork|steak|ground|meat|fish|salmon|tuna|shrimp|seafood)/i, days: 2, storage: "Refrigerate or freeze immediately" },
+  { match: /(chicken|turkey|beef|pork|steak|ground|meat|fish|salmon|tuna|shrimp|seafood|cod|tilapia|halibut|mahi|swordfish|trout|bass|snapper|flounder|haddock|crab|lobster|scallop|clam|oyster|mussel)/i, days: 2, storage: "Refrigerate or freeze immediately" },
   { match: /(lettuce|spinach|salad|greens|kale|arugula)/i, days: 5, storage: "Refrigerate" },
   { match: /(strawberr|blueberr|raspberr|blackberr|berries)/i, days: 3, storage: "Refrigerate" },
   { match: /(apple|banana|orange|clementine|grape|pear|peach|plum|mango|avocado)/i, days: 7, storage: "Pantry" },
-  { match: /(bread|bagel|roll|bun|tortilla)/i, days: 5, storage: "Counter or freeze" },
-  { match: /(tomato|cucumber|pepper|zucchini)/i, days: 5, storage: "Counter or refrigerate" },
+  { match: /(bread|bagel|roll|bun|tortilla|pita|naan|wrap|baguette|ciabatta|focaccia|flatbread)/i, days: 5, storage: "Counter or freeze" },
+  { match: /(cucumber|cuke|zucchini|\btomato(?!\s*(?:paste|sauce|soup|puree|juice|ketchup|can|canned|crush|diced|stewed))\b|\bpepper(?!\s*(?:flakes|corns?|grind|spice|sauce|jack))\b)/i, days: 5, storage: "Counter or refrigerate" },
   { match: /(carrot|celery|broccoli|cauliflower)/i, days: 10, storage: "Refrigerate" },
+  { match: /(dolm|hummus|tzatziki|falafel|guacamole|taboule|tabouli|babaganoush)/i, days: 5, storage: "Refrigerate" },
 ];
 
 function classifyItem(name) {
