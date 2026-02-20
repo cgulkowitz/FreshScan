@@ -1,0 +1,705 @@
+// ===========================
+// AUTH & PERSISTENCE
+// ===========================
+const API        = 'https://api.sizebud.com';
+const APP_NAME   = 'freshscan';
+const COLLECTION = 'default_collection';
+let currentUser  = null;
+let pendingEmail = '';
+
+async function apiPost(path, data = {}) {
+  const res = await fetch(API + path, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(data)
+  });
+  if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+  return res.json();
+}
+
+async function checkAuth() {
+  try {
+    const res = await fetch(API + '/me', { credentials: 'include' });
+    if (!res.ok) throw new Error();
+    currentUser = await res.json();
+    showLoggedIn();
+    await loadItems();
+  } catch {
+    showLoggedOut();
+  }
+}
+
+function showLoggedIn() {
+  $('authForms').style.display = 'none';
+  $('authUser').style.display = 'flex';
+  $('authEmail').textContent = currentUser.email;
+}
+
+function showLoggedOut() {
+  $('authForms').style.display = '';
+  $('authUser').style.display = 'none';
+  showTab('signIn');
+}
+
+function showTab(tab) {
+  $('formSignIn').style.display = tab === 'signIn' ? '' : 'none';
+  $('formSignUp').style.display = tab === 'signUp' ? '' : 'none';
+  $('formVerify').style.display = 'none';
+  $('tabSignIn').className = tab === 'signIn' ? 'btn' : 'btn btn-secondary';
+  $('tabSignUp').className = tab === 'signUp' ? 'btn' : 'btn btn-secondary';
+}
+
+async function handleSignIn() {
+  const email = $('siEmail').value.trim();
+  const pw    = $('siPassword').value;
+  $('siError').textContent = '';
+  try {
+    await apiPost('/login', { email, password: pw, app_name: APP_NAME });
+    await checkAuth();
+  } catch (e) {
+    $('siError').textContent = e.message;
+  }
+}
+
+async function handleSignUp() {
+  const email = $('suEmail').value.trim();
+  const pw    = $('suPassword').value;
+  $('suError').textContent = '';
+  try {
+    await apiPost('/register', { email, password: pw, app_name: APP_NAME });
+    pendingEmail = email;
+    $('formSignUp').style.display = 'none';
+    $('formSignIn').style.display = 'none';
+    $('formVerify').style.display = '';
+  } catch (e) {
+    $('suError').textContent = e.message;
+  }
+}
+
+async function handleVerify() {
+  const code = $('vCode').value.trim();
+  $('vError').textContent = '';
+  try {
+    await apiPost('/verify_email', { email: pendingEmail, code, app_name: APP_NAME });
+    // Re-use the password the user typed during sign-up to auto-login
+    await apiPost('/login', { email: pendingEmail, password: $('suPassword').value, app_name: APP_NAME });
+    await checkAuth();
+  } catch (e) {
+    $('vError').textContent = e.message;
+  }
+}
+
+async function handleSignOut() {
+  try { await apiPost('/logout'); } catch {}
+  currentUser = null;
+  allItems = [];
+  renderItems();
+  showLoggedOut();
+}
+
+async function saveItems() {
+  if (!currentUser) return;
+  try {
+    await apiPost('/update_object', {
+      app_name:        APP_NAME,
+      collection_name: COLLECTION,
+      userId:          currentUser.id,
+      obj:             JSON.stringify(allItems)
+    });
+  } catch (e) {
+    console.warn('saveItems failed:', e.message);
+  }
+}
+
+async function loadItems() {
+  try {
+    const res = await apiPost('/update_object', {
+      app_name:        APP_NAME,
+      collection_name: COLLECTION,
+      userId:          currentUser.id
+    });
+    let items;
+    if (res && res.obj != null) {
+      items = typeof res.obj === 'string' ? JSON.parse(res.obj) : res.obj;
+    } else if (Array.isArray(res)) {
+      items = res;
+    } else {
+      items = [];
+    }
+    allItems = Array.isArray(items) ? items : [];
+    renderItems();
+  } catch {
+    allItems = [];
+    renderItems();
+  }
+}
+
+// ===========================
+// HELPER FUNCTIONS
+// ===========================
+const $ = (id) => document.getElementById(id);
+
+function setStatus(msg, type = 'info') {
+  const status = $('status');
+  status.textContent = msg;
+  status.style.background = type === 'error'
+    ? 'rgba(239,68,68,.1)'
+    : 'rgba(255,77,166,.08)';
+}
+
+function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+function formatDate(date) {
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+function getDaysUntil(targetDate) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(targetDate);
+  target.setHours(0, 0, 0, 0);
+  const diffTime = target - today;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+// ===========================
+// PERISHABILITY RULES
+// ===========================
+const PERISHABLE_ITEMS = [
+  { match: /(milk|yogurt|\byg\b|ygrt|cream|cheese|butter|mozzarella|ricotta|sour cream|feta|cheddar|parmesan|gouda|brie|colby|provolone|gruyere)/i, days: 7, storage: "Refrigerate" },
+  { match: /(egg|eggs)/i, days: 21, storage: "Refrigerate" },
+  { match: /(chicken|turkey|beef|pork|steak|ground|meat|fish|salmon|tuna|shrimp|seafood|cod|tilapia|halibut|mahi|swordfish|trout|bass|snapper|flounder|haddock|crab|lobster|scallop|clam|oyster|mussel)/i, days: 2, storage: "Refrigerate or freeze immediately" },
+  { match: /(lettuce|spinach|salad|greens|kale|arugula)/i, days: 5, storage: "Refrigerate" },
+  { match: /(strawberr|blueberr|raspberr|blackberr|berries)/i, days: 3, storage: "Refrigerate" },
+  { match: /(apple|banana|orange|clementine|grape|pear|peach|plum|mango|avocado)/i, days: 7, storage: "Pantry" },
+  { match: /(bread|bagel|roll|bun|tortilla|pita|naan|wrap|baguette|ciabatta|focaccia|flatbread)/i, days: 5, storage: "Counter or freeze" },
+  { match: /(cucumber|cuke|zucchini|\btomato(?!\s*(?:paste|sauce|soup|puree|juice|ketchup|can|canned|crush|diced|stewed))\b|\bpepper(?!\s*(?:flakes|corns?|grind|spice|sauce|jack))\b)/i, days: 5, storage: "Counter or refrigerate" },
+  { match: /(carrot|celery|broccoli|cauliflower)/i, days: 10, storage: "Refrigerate" },
+  { match: /(dolm|hummus|tzatziki|falafel|guacamole|taboule|tabouli|babaganoush)/i, days: 5, storage: "Refrigerate" },
+];
+
+function classifyItem(name) {
+  for (const item of PERISHABLE_ITEMS) {
+    if (item.match.test(name)) {
+      return {
+        perishable: true,
+        days: item.days,
+        storage: item.storage
+      };
+    }
+  }
+  return {
+    perishable: false,
+    days: null,
+    storage: "Pantry"
+  };
+}
+
+// ===========================
+// RECEIPT PARSING
+// ===========================
+const STORE_NAMES = /\b(walmart|target|kroger|safeway|albertsons|whole foods|trader joe|costco|aldi|publix|wegmans|giant|stop & shop|food lion|harris teeter|shoprite|ralphs|vons|jewel|meijer|heb|winco|sprouts|fresh market|grocery outlet)\b/i;
+
+const BAD_PATTERNS = [
+  /\b(store|market|shop|supermarket|grocery|mart|center|plaza)\b/i,
+  /\b(thank you|survey|customer|service|visit|www\.|http|\.com|save|rewards|member|points)\b/i,
+  /\b(cashier|register|terminal|lane|transaction|receipt|invoice|order)\b/i,
+  /\b(avenue|ave|street|st\.|road|rd\.|blvd|drive|dr\.|lane|ln\.|suite|ste)\b/i,
+  /\b\d{5}(-\d{4})?\b/,
+  /\b(phone|tel|fax)\b/i,
+  /\b(subtotal|total|tax|vat|balance|change|amount due|sale|discount|savings)\b/i,
+  /\b(cash|credit|debit|card|approval|auth|tender)\b/i,
+  /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/,
+  /\b\d{1,2}:\d{2}\s*(am|pm)\b/i,
+  /\b(qty|quantity|price|each|description)\b/i,
+];
+
+function isValidItemLine(line) {
+  if (!line || line.length < 3) return false;
+  if (/^[-=*_.]+$/.test(line)) return false;
+
+  const letters = (line.match(/[A-Za-z]/g) || []).length;
+  const digits = (line.match(/[0-9]/g) || []).length;
+  if (letters < 3 || digits > letters) return false;
+
+  if (STORE_NAMES.test(line)) return false;
+
+  for (const pattern of BAD_PATTERNS) {
+    if (pattern.test(line)) return false;
+  }
+
+  return true;
+}
+
+function extractPrice(line) {
+  // Allow optional $ prefix and trailing 1-2 letter tax flag (F, N, T, FT, etc.)
+  const match = line.match(/\$?(\d{1,3}(?:,\d{3})*|\d+)\.\d{2}(?:\s+\S{1,2})?\s*$/);
+  if (!match) return null;
+  const numStr = match[0].match(/[\d,]+\.\d{2}/)[0];
+  const price = parseFloat(numStr.replace(/,/g, ''));
+  if (price <= 0 || price > 999) return null;
+  return {
+    price,
+    priceStr: numStr,
+    name: line.substring(0, match.index).replace(/\s*\$$/, '').trim()
+  };
+}
+
+function cleanItemName(name) {
+  return name
+    .replace(/\.{2,}/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+[A-Z]$/i, '')
+    .replace(/^\d{6,}\s+/, '')
+    .replace(/\s+[A-Z]?\d{3,}$/i, '')
+    .trim();
+}
+
+function parseReceipt(ocrText) {
+  const lines = ocrText
+    .split(/\r?\n/)
+    .map(l => l.replace(/[|]/g, 'I').replace(/(\d),(\d{2})(?!\d)/g, '$1.$2').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+  // Lines matching these are financial summaries, never grocery items
+  const SKIP_LINE = /\b(subtotal|sub.?total|total|tax|vat|net sales|change|balance|paid|tender|carry out|bag fee|bag charge|sold items|approval|auth code|chip card|debit|credit|cash|visa|mastercard|amex|discover|earn|points|rewards|returns|refund)\b/i;
+
+  // Content that marks a price-annotation line rather than an item name
+  const JUNK_NAME = /\b(savings|reg|regular|qty|quantity|each|per lb|per oz)\b|^\s*\(/i;
+
+  function isGoodName(n) {
+    if (!n || n.length < 3 || n.length > 60) return false;
+    if (!/[A-Za-z]{2,}/.test(n)) return false;
+    const letters = (n.match(/[A-Za-z]/g) || []).length;
+    const digits  = (n.match(/[0-9]/g)    || []).length;
+    if (digits > letters) return false;
+    return !SKIP_LINE.test(n) && !JUNK_NAME.test(n);
+  }
+
+  const items = [];
+  const seen  = new Set();
+
+  function addItem(name, price) {
+    const key = name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    items.push({ name, price });
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const extracted = extractPrice(line);
+
+    if (extracted) {
+      // ── Case A: line carries a price ──
+      if (SKIP_LINE.test(line)) continue;
+      const name = cleanItemName(extracted.name);
+      if (isGoodName(name)) {
+        addItem(name, extracted.price);
+      }
+      // If name is junk, the price was already consumed by a preceding Case B forward-scan
+
+    } else {
+      // ── Case B: name-only line — scan forward up to 3 lines for its price ──
+      if (SKIP_LINE.test(line) || STORE_NAMES.test(line)) continue;
+      const name = cleanItemName(line);
+      if (!isGoodName(name)) continue;
+
+      // Take the LAST valid price in the window so sale items use the discounted price
+      // (the "Savings with Prime $3.00 F" line comes after the "Reg $4.79" line)
+      let bestPrice    = null;
+      let bestConsumed = 0;
+      for (let j = 1; j <= 3 && i + j < lines.length; j++) {
+        const fwd   = lines[i + j];
+        const fwdEx = extractPrice(fwd);
+        if (fwdEx) {
+          if (SKIP_LINE.test(fwd)) continue;
+          const fwdName = cleanItemName(fwdEx.name);
+          if (isGoodName(fwdName)) break; // next line is its own self-contained item
+          bestPrice    = fwdEx.price;
+          bestConsumed = j;
+        } else {
+          // Non-price line: stop if it looks like a new item name
+          const c = cleanItemName(fwd);
+          if (isGoodName(c) && !JUNK_NAME.test(fwd)) break;
+        }
+      }
+
+      if (bestPrice !== null) {
+        addItem(name, bestPrice);
+        i += bestConsumed; // skip the detail lines we just consumed
+      }
+    }
+  }
+
+  return items;
+}
+
+// ===========================
+// OCR PROCESSING
+// ===========================
+async function preprocessImage(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const maxDim = Math.max(img.width, img.height);
+      const scale = maxDim < 2400 ? Math.min(4, 2400 / maxDim) : 1;
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = id.data;
+      const n = canvas.width * canvas.height;
+
+      // Convert to grayscale and build histogram
+      const gray = new Uint8Array(n);
+      const hist = new Int32Array(256);
+      for (let i = 0, p = 0; i < n; i++, p += 4) {
+        const g = Math.round(0.299 * d[p] + 0.587 * d[p+1] + 0.114 * d[p+2]);
+        gray[i] = g;
+        hist[g]++;
+      }
+
+      // Percentile stretch: map the 1st–99th percentile of this image's
+      // actual brightness range to 0–255. This handles over/underexposed
+      // photos and uneven lighting without a hard binarisation threshold.
+      // Tesseract applies its own well-tuned internal binarisation on the
+      // resulting normalised grayscale image.
+      let lo = 0, hi = 255, cumSum = 0;
+      for (let i = 0; i < 256; i++) {
+        cumSum += hist[i];
+        if (cumSum <= n * 0.01) lo = i;
+        if (cumSum <= n * 0.99) hi = i;
+      }
+      const range = Math.max(hi - lo, 1);
+
+      for (let i = 0, p = 0; i < n; i++, p += 4) {
+        const v = Math.max(0, Math.min(255, Math.round((gray[i] - lo) * 255 / range)));
+        d[p] = d[p+1] = d[p+2] = v;
+      }
+
+      ctx.putImageData(id, 0, 0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(resolve, 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
+async function scanReceipt(file) {
+  setStatus('🔄 Preprocessing image...');
+  const processedBlob = await preprocessImage(file);
+
+  const worker = await Tesseract.createWorker('eng', 1, {
+    logger: (m) => {
+      if (m.status) {
+        const pct = m.progress ? Math.round(m.progress * 100) : 0;
+        setStatus(`🔄 ${m.status}... ${pct}%`);
+      }
+    }
+  });
+
+  await worker.setParameters({
+    tessedit_pageseg_mode: '4',
+    preserve_interword_spaces: '1',
+  });
+
+  const { data: { text } } = await worker.recognize(processedBlob);
+  await worker.terminate();
+  return text;
+}
+
+// ===========================
+// UI RENDERING
+// ===========================
+let allItems = [];
+
+function renderItems() {
+  const container = $('itemsList');
+
+  if (allItems.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p style="font-size: 48px; margin: 0;">🛍️</p>
+        <p>No items yet. Scan a receipt or add items manually above.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const purchaseDate = $('purchaseDate').value
+    ? new Date($('purchaseDate').value + 'T00:00:00')
+    : new Date();
+
+  container.innerHTML = allItems.map((item, idx) => {
+    const useByDate = item.perishable && item.days
+      ? addDays(purchaseDate, item.days)
+      : null;
+
+    const daysLeft = useByDate ? getDaysUntil(useByDate) : null;
+
+    let expiryBadge = '';
+    if (daysLeft !== null) {
+      if (daysLeft < 0) {
+        expiryBadge = `<span class="badge perishable">Expired</span>`;
+      } else if (daysLeft <= 3) {
+        expiryBadge = `<span class="badge expires-soon">Use within ${daysLeft} day${daysLeft !== 1 ? 's' : ''}</span>`;
+      }
+    }
+
+    return `
+      <div class="item-card ${item.crossed ? 'crossed' : ''}" data-idx="${idx}">
+        <div class="item-header" onclick="toggleItem(${idx})">
+          <div class="item-name">
+            ${item.manual ? '✏️ ' : ''}${escapeHtml(item.name)}
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${expiryBadge}
+            <span class="badge ${item.perishable ? 'perishable' : 'non-perishable'}">
+              ${item.perishable ? 'Yes' : 'No'}
+            </span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+
+        <div class="item-details">
+          <div class="detail-row">
+            <span class="detail-label">Perishable:</span>
+            <span class="detail-value">
+              <span class="badge ${item.perishable ? 'perishable' : 'non-perishable'}">
+                ${item.perishable ? 'Yes' : 'No'}
+              </span>
+            </span>
+          </div>
+
+          <div class="detail-row">
+            <span class="detail-label">Storage:</span>
+            <span class="detail-value">${escapeHtml(item.storage)}</span>
+          </div>
+
+          ${useByDate ? `
+            <div class="detail-row">
+              <span class="detail-label">Use By:</span>
+              <span class="detail-value" style="font-weight: 700; color: ${daysLeft <= 3 ? 'var(--red)' : 'var(--green)'};">
+                ${formatDate(useByDate)}
+                ${daysLeft !== null ? `(${daysLeft >= 0 ? daysLeft + ' days left' : 'expired'})` : ''}
+              </span>
+            </div>
+          ` : `
+            <div class="detail-row">
+              <span class="detail-label">Use By:</span>
+              <span class="detail-value">No expiration</span>
+            </div>
+          `}
+
+          <div class="detail-row">
+            <span class="detail-label">Price:</span>
+            <span class="detail-value">$${item.price.toFixed(2)}</span>
+          </div>
+
+          <div class="item-actions">
+            <button class="small-btn" onclick="togglePerishable(${idx})">
+              ${item.perishable ? '❄️ Mark Non-Perishable' : '🍓 Mark Perishable'}
+            </button>
+            <button class="small-btn" onclick="toggleCrossed(${idx})">
+              ${item.crossed ? '↩️ Restore' : '✓ Mark Used'}
+            </button>
+            <button class="small-btn" onclick="removeItem(${idx})" style="color: var(--red);">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleItem(idx) {
+  const card = document.querySelector(`[data-idx="${idx}"]`);
+  card.classList.toggle('expanded');
+}
+
+function togglePerishable(idx) {
+  allItems[idx].perishable = !allItems[idx].perishable;
+
+  if (allItems[idx].perishable) {
+    allItems[idx].days = allItems[idx].days || 5;
+    allItems[idx].storage = allItems[idx].storage === 'Pantry'
+      ? 'Refrigerate'
+      : allItems[idx].storage;
+  } else {
+    allItems[idx].days = null;
+    allItems[idx].storage = 'Pantry';
+  }
+
+  renderItems();
+  saveItems();
+}
+
+function toggleCrossed(idx) {
+  allItems[idx].crossed = !allItems[idx].crossed;
+  renderItems();
+  saveItems();
+}
+
+function removeItem(idx) {
+  if (confirm(`Remove "${allItems[idx].name}" from your list?`)) {
+    allItems.splice(idx, 1);
+    renderItems();
+    saveItems();
+    setStatus(`✓ Item removed`);
+  }
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ===========================
+// EVENT HANDLERS
+// ===========================
+const fileInput = $('fileInput');
+const runBtn = $('runBtn');
+const clearBtn = $('clearBtn');
+const previewImg = $('previewImg');
+const purchaseDateEl = $('purchaseDate');
+
+// Set today's date
+(() => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  purchaseDateEl.value = `${yyyy}-${mm}-${dd}`;
+})();
+
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files?.[0];
+  runBtn.disabled = !file;
+
+  if (file) {
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    previewImg.style.display = 'block';
+    setStatus('✓ Receipt loaded. Click "Scan Receipt" to extract items.');
+  } else {
+    previewImg.style.display = 'none';
+    setStatus('📁 Choose a receipt image to get started');
+  }
+});
+
+runBtn.addEventListener('click', async () => {
+  const file = fileInput.files?.[0];
+  if (!file) return;
+
+  runBtn.disabled = true;
+  clearBtn.disabled = true;
+
+  try {
+    setStatus('🔄 Scanning receipt...');
+    const ocrText = await scanReceipt(file);
+    $('ocrText').value = ocrText;
+
+    const items = parseReceipt(ocrText);
+
+    const purchaseDate = purchaseDateEl.value
+      ? new Date(purchaseDateEl.value + 'T00:00:00')
+      : new Date();
+
+    allItems = items.map(item => {
+      const classification = classifyItem(item.name);
+      return {
+        ...item,
+        ...classification,
+        manual: false,
+        crossed: false
+      };
+    });
+
+    renderItems();
+    saveItems();
+    setStatus(`✓ Found ${items.length} item${items.length !== 1 ? 's' : ''} on your receipt!`);
+
+  } catch (err) {
+    console.error(err);
+    setStatus('❌ Error scanning receipt. Please try again.', 'error');
+  } finally {
+    runBtn.disabled = false;
+    clearBtn.disabled = false;
+  }
+});
+
+clearBtn.addEventListener('click', () => {
+  fileInput.value = '';
+  previewImg.style.display = 'none';
+  runBtn.disabled = true;
+  allItems = [];
+  $('ocrText').value = '';
+  renderItems();
+  setStatus('🗑️ Cleared. Ready for a new receipt.');
+});
+
+$('addItemBtn').addEventListener('click', () => {
+  const name = $('manualItemName').value.trim();
+  const priceStr = $('manualItemPrice').value.trim();
+
+  if (!name) {
+    setStatus('❌ Please enter an item name', 'error');
+    return;
+  }
+
+  const price = priceStr ? parseFloat(priceStr.replace('$', '')) : 0;
+  if (isNaN(price) || price < 0) {
+    setStatus('❌ Please enter a valid price', 'error');
+    return;
+  }
+
+  const classification = classifyItem(name);
+
+  allItems.push({
+    name,
+    price,
+    ...classification,
+    manual: true,
+    crossed: false
+  });
+
+  $('manualItemName').value = '';
+  $('manualItemPrice').value = '';
+
+  renderItems();
+  saveItems();
+  setStatus(`✓ Added "${name}" to your list`);
+});
+
+$('manualItemName').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('addItemBtn').click();
+});
+
+$('manualItemPrice').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('addItemBtn').click();
+});
+
+// Re-render when purchase date changes
+purchaseDateEl.addEventListener('change', renderItems);
+
+checkAuth();

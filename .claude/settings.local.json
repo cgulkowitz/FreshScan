@@ -11,7 +11,8 @@
       "Bash(git -C \"C:/Users/AronsonD/Documents/GitHUb/FreshScan\" status)",
       "Bash(cmd /c \"dir \"\"C:\\\\Users\\\\AronsonD\\\\Documents\\\\GitHUb\\\\FreshScan\"\" /b /s\")",
       "Bash(cmd /c \"dir \"\"C:\\\\Users\\\\AronsonD\"\" /b /s /ad 2>&1 | findstr /i \"\"scan\"\"\")",
-      "Bash(git -C \"C:/Users/AronsonD/Documents/GitHUb/FreshScan\" ls-files)"
+      "Bash(git -C \"C:/Users/AronsonD/Documents/GitHUb/FreshScan\" ls-files)",
+      "WebFetch(domain:api.sizebud.com)"
     ]
   }
 }
