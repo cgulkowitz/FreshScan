@@ -8,26 +8,31 @@ let currentUser  = null;
 let pendingEmail = '';
 
 async function apiPost(path, data = {}) {
-  const res = await fetch(API + path, {
+  const res  = await fetch(API + path, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams(data)
   });
-  if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-  return res.json();
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); } catch { json = { _raw: text }; }
+  if (!res.ok) throw new Error(json.detail || text || res.statusText);
+  return json;
 }
 
 async function checkAuth() {
-  try {
-    const res = await fetch(API + '/me', { credentials: 'include' });
-    if (!res.ok) throw new Error();
-    currentUser = await res.json();
-    showLoggedIn();
-    await loadItems();
-  } catch {
-    showLoggedOut();
-  }
+  // GET /me temporarily disabled while debugging
+  // try {
+  //   const res = await fetch(API + '/me', { credentials: 'include' });
+  //   if (!res.ok) throw new Error();
+  //   currentUser = await res.json();
+  //   showLoggedIn();
+  //   await loadItems();
+  // } catch {
+  //   showLoggedOut();
+  // }
+  showLoggedOut();
 }
 
 function showLoggedIn() {
@@ -55,8 +60,11 @@ async function handleSignIn() {
   const pw    = $('siPassword').value;
   $('siError').textContent = '';
   try {
-    await apiPost('/login', { email, password: pw, app_name: APP_NAME });
-    await checkAuth();
+    const data = await apiPost('/login', { email, password: pw, app_name: APP_NAME });
+    // Confirm sign-in from login response; skip GET /me for now
+    currentUser = { email, id: data.id ?? data.user_id ?? email };
+    showLoggedIn();
+    await loadItems();
   } catch (e) {
     $('siError').textContent = e.message;
   }
@@ -83,8 +91,11 @@ async function handleVerify() {
   try {
     await apiPost('/verify_email', { email: pendingEmail, code, app_name: APP_NAME });
     // Re-use the password the user typed during sign-up to auto-login
-    await apiPost('/login', { email: pendingEmail, password: $('suPassword').value, app_name: APP_NAME });
-    await checkAuth();
+    const data = await apiPost('/login', { email: pendingEmail, password: $('suPassword').value, app_name: APP_NAME });
+    // Confirm sign-in from login response; skip GET /me for now
+    currentUser = { email: pendingEmail, id: data.id ?? data.user_id ?? pendingEmail };
+    showLoggedIn();
+    await loadItems();
   } catch (e) {
     $('vError').textContent = e.message;
   }
