@@ -60,9 +60,10 @@ async function handleSignIn() {
   const pw    = $('siPassword').value;
   $('siError').textContent = '';
   try {
-    const data = await apiPost('/login', { email, password: pw, app_name: APP_NAME });
-    // Confirm sign-in from login response; skip GET /me for now
-    currentUser = { email, id: data.id ?? data.user_id ?? email };
+    await apiPost('/login', { email, password: pw, app_name: APP_NAME });
+    // Fetch real user object (id, email) now that the session cookie is set
+    const meRes = await fetch(API + '/me', { credentials: 'include' });
+    currentUser = meRes.ok ? await meRes.json() : { email, id: email };
     showLoggedIn();
     await loadItems();
   } catch (e) {
@@ -90,10 +91,10 @@ async function handleVerify() {
   $('vError').textContent = '';
   try {
     await apiPost('/verify_email', { email: pendingEmail, code, app_name: APP_NAME });
-    // Re-use the password the user typed during sign-up to auto-login
-    const data = await apiPost('/login', { email: pendingEmail, password: $('suPassword').value, app_name: APP_NAME });
-    // Confirm sign-in from login response; skip GET /me for now
-    currentUser = { email: pendingEmail, id: data.id ?? data.user_id ?? pendingEmail };
+    await apiPost('/login', { email: pendingEmail, password: $('suPassword').value, app_name: APP_NAME });
+    // Fetch real user object now that the session cookie is set
+    const meRes = await fetch(API + '/me', { credentials: 'include' });
+    currentUser = meRes.ok ? await meRes.json() : { email: pendingEmail, id: pendingEmail };
     showLoggedIn();
     await loadItems();
   } catch (e) {
