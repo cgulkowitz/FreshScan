@@ -115,7 +115,7 @@ async function saveItems() {
     await apiPost('/update_object', {
       app_name:        APP_NAME,
       collection_name: COLLECTION,
-      userId:          currentUser.id,
+      userId:          currentUser.email,
       obj:             JSON.stringify({ items: perishableItems })
     });
   } catch (e) {
@@ -128,7 +128,7 @@ async function loadItems() {
     const doc = await apiPost('/fetch_object', {
       app_name:        APP_NAME,
       collection_name: COLLECTION,
-      userId:          currentUser.id
+      userId:          currentUser.email
     });
     allItems = Array.isArray(doc.items) ? doc.items : [];
     renderItems();
