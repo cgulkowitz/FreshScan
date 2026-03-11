@@ -22,17 +22,15 @@ async function apiPost(path, data = {}) {
 }
 
 async function checkAuth() {
-  // GET /me temporarily disabled while debugging
-  // try {
-  //   const res = await fetch(API + '/me', { credentials: 'include' });
-  //   if (!res.ok) throw new Error();
-  //   currentUser = await res.json();
-  //   showLoggedIn();
-  //   await loadItems();
-  // } catch {
-  //   showLoggedOut();
-  // }
-  showLoggedOut();
+  try {
+    const res = await fetch(API + '/me', { credentials: 'include' });
+    if (!res.ok) throw new Error();
+    currentUser = await res.json();
+    showLoggedIn();
+    await loadItems();
+  } catch {
+    showLoggedOut();
+  }
 }
 
 function showLoggedIn() {
@@ -112,12 +110,13 @@ async function handleSignOut() {
 
 async function saveItems() {
   if (!currentUser) return;
+  const perishableItems = allItems.filter(item => item.perishable);
   try {
     await apiPost('/update_object', {
       app_name:        APP_NAME,
       collection_name: COLLECTION,
       userId:          currentUser.id,
-      obj:             JSON.stringify(allItems)
+      obj:             JSON.stringify({ items: perishableItems })
     });
   } catch (e) {
     console.warn('saveItems failed:', e.message);
@@ -126,20 +125,12 @@ async function saveItems() {
 
 async function loadItems() {
   try {
-    const res = await apiPost('/update_object', {
+    const doc = await apiPost('/fetch_object', {
       app_name:        APP_NAME,
       collection_name: COLLECTION,
       userId:          currentUser.id
     });
-    let items;
-    if (res && res.obj != null) {
-      items = typeof res.obj === 'string' ? JSON.parse(res.obj) : res.obj;
-    } else if (Array.isArray(res)) {
-      items = res;
-    } else {
-      items = [];
-    }
-    allItems = Array.isArray(items) ? items : [];
+    allItems = Array.isArray(doc.items) ? doc.items : [];
     renderItems();
   } catch {
     allItems = [];
